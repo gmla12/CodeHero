@@ -1,0 +1,408 @@
+:root {
+    --primary: #00d2ff;
+    --secondary: #3a86ff;
+    --accent: #ff006e;
+    --text: #ffffff;
+    --text-muted: #8b9bb4;
+    --bg: #0f172a;
+    --card-bg: rgba(30, 41, 59, 0.7);
+    --card-border: rgba(255, 255, 255, 0.1);
+    --success: #2ed573;
+    --danger: #ff4757;
+    --gold: #ffa502;
+}
+
+* {
+    box-sizing: border-box;
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+/* SCROLLBARS PERSONALIZADOS */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--secondary);
+    border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+}
+
+body {
+    margin: 0;
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    height: 100vh;
+    overflow: hidden;
+}
+
+.screen {
+    display: none;
+    height: 100%;
+    flex-direction: column;
+    animation: fadeIn 0.3s ease;
+}
+
+.screen.active {
+    display: flex;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.scroll-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px;
+    padding-bottom: 80px;
+    /* Espacio para botón flotante o footer */
+}
+
+/* Modales */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    backdrop-filter: blur(5px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal-box {
+    background: #1e293b;
+    border: 1px solid var(--primary);
+    padding: 25px;
+    border-radius: 20px;
+    width: 90%;
+    max-width: 400px;
+    text-align: center;
+    box-shadow: 0 0 30px rgba(0, 210, 255, 0.3);
+    position: relative;
+    animation: scaleIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes scaleIn {
+    from {
+        transform: scale(0.8);
+        opacity: 0;
+    }
+
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Login Grid */
+.login-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 20px;
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+/* --- GAMIFIED LOGIN --- */
+#screen-login {
+    background: radial-gradient(circle at center, #1a2a44 0%, #0f172a 100%);
+    display: flex;
+    /* keep flex, but ensure full centering hidden handled by class */
+    z-index: 100;
+}
+
+#screen-login h1 {
+    animation: neonPulse 2s infinite alternate;
+}
+
+@keyframes neonPulse {
+    from {
+        text-shadow: 0 0 10px var(--primary), 0 0 20px var(--primary);
+    }
+
+    to {
+        text-shadow: 0 0 20px var(--primary), 0 0 30px #00ffff;
+    }
+}
+
+.holo-card {
+    background: rgba(15, 23, 42, 0.6);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(0, 210, 255, 0.3);
+    box-shadow: 0 0 30px rgba(0, 210, 255, 0.1);
+    border-radius: 20px;
+    padding: 30px;
+}
+
+/* --- MISSION MAP (WORLDS & PHASES) --- */
+.world-section {
+    margin-bottom: 40px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 16px;
+    padding: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.world-title {
+    font-size: 1.5rem;
+    color: var(--gold);
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding-bottom: 10px;
+}
+
+.phase-path {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 30px;
+    position: relative;
+}
+
+/* Vertical Line */
+.phase-path::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    bottom: 20px;
+    left: 50%;
+    width: 2px;
+    background: #444;
+    transform: translateX(-50%);
+    z-index: 0;
+}
+
+.phase-node {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 400px;
+    background: #1e293b;
+    border: 2px solid #444;
+    border-radius: 12px;
+    padding: 15px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.phase-node.locked {
+    opacity: 0.6;
+    pointer-events: none;
+    filter: grayscale(1);
+}
+
+.phase-node.active {
+    border-color: var(--primary);
+    box-shadow: 0 0 15px rgba(0, 210, 255, 0.2);
+    transform: scale(1.02);
+}
+
+.phase-node.completed {
+    border-color: var(--success);
+}
+
+.phase-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: #111;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    border: 2px solid #666;
+}
+
+.phase-node.active .phase-icon {
+    background: var(--primary);
+    color: #000;
+    border-color: #fff;
+}
+
+.phase-content h4 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: white;
+}
+
+.phase-content p {
+    margin: 5px 0 0 0;
+    font-size: 0.8rem;
+    color: #aaa;
+}
+
+/* Level Dropdown inside Phase */
+.level-list-dropdown {
+    margin-top: 10px;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+    padding: 10px;
+    display: none;
+    /* JS toggles this */
+    animation: slideDown 0.3s ease;
+}
+
+.level-list-dropdown.open {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(60px, 1fr));
+    gap: 10px;
+}
+
+.level-chip {
+    background: #333;
+    color: white;
+    text-align: center;
+    padding: 8px 0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    border: 1px solid transparent;
+}
+
+.level-chip:hover {
+    background: var(--primary);
+    color: black;
+}
+
+.level-chip.completed {
+    border-color: var(--success);
+    color: var(--success);
+}
+
+@keyframes slideDown {
+    from {
+        opacity: 0;
+        transform: translateY(-10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* --- GAMIFIED LOGIN FIXES --- */
+.holo-card input,
+.holo-card button {
+    width: 100% !important;
+    box-sizing: border-box !important;
+    max-width: 100%;
+    margin-left: 0;
+    margin-right: 0;
+}
+
+.holo-card button {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    padding: 12px;
+}
+
+/* Security: Hide app until JS handles it */
+body.loading .screen {
+    display: none !important;
+}
+
+/* --- STRICT VISIBILITY --- */
+.screen:not(.active) {
+    display: none !important;
+}
+
+/* --- GAMIFIED LOGIN FINAL FIX --- */
+/* Force override of any other button styles */
+#screen-login.active {
+    background: radial-gradient(circle at center, #1a2a44 0%, #0f172a 100%) !important;
+    z-index: 9999 !important;
+    justify-content: center !important;
+    align-items: center !important;
+    height: 100vh !important;
+    width: 100vw !important;
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    display: flex !important;
+}
+
+#screen-login:not(.active) {
+    display: none !important;
+    z-index: -1 !important;
+}
+
+.holo-card {
+    background: rgba(15, 23, 42, 0.6) !important;
+    backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(0, 210, 255, 0.3) !important;
+    box-shadow: 0 0 30px rgba(0, 210, 255, 0.1) !important;
+    border-radius: 20px !important;
+    padding: 40px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 20px !important;
+    align-items: stretch !important;
+    /* Forces full width */
+    justify-content: center !important;
+    width: 100%;
+    max-width: 400px;
+}
+
+.holo-card input {
+    width: 100% !important;
+    padding: 15px !important;
+    font-size: 1rem !important;
+    border-radius: 8px !important;
+    background: rgba(0, 0, 0, 0.5) !important;
+    border: 2px solid var(--primary) !important;
+    color: white !important;
+    margin-bottom: 0 !important;
+}
+
+.holo-card button {
+    width: 100% !important;
+    padding: 0 20px !important;
+    font-size: 1.1rem !important;
+    font-weight: bold !important;
+    border-radius: 8px !important;
+    min-height: 60px !important;
+    /* Force Height */
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    white-space: normal !important;
+    text-transform: uppercase !important;
+    margin: 0 !important;
+}
+
+body.loading .screen {
+    display: none !important;
+}

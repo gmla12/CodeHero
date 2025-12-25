@@ -1,0 +1,63 @@
+# 🦸 CodeHero: Aprende Lógica de Programación
+
+Una aplicación gamificada para aprender los fundamentos de la programación (bucles, condicionales, funciones) a través de una aventura espacial.
+
+## 🚀 Tecnologías
+
+*   **Frontend**: HTML5, CSS3, Vanilla JavaScript (MVC Pattern).
+*   **Backend**: Supabase (Auth, Database, RLS, Storage).
+*   **Herramientas**: Vite (Build Tool), pnpm (Package Manager).
+
+## 🛠️ Instalación y Configuración
+
+Sigue estos pasos para configurar el proyecto desde cero.
+
+### 1. Clonar y Dependencias
+```bash
+git clone <repo-url>
+cd CodeHero
+pnpm install
+```
+
+### 2. Configurar Supabase Backend
+1.  Crea un nuevo proyecto en [Supabase](https://supabase.com).
+2.  Ve al **SQL Editor** en tu dashboard de Supabase.
+3.  Abre el archivo `supabase/schema.sql` (ubicado en la carpeta `supabase` del proyecto).
+4.  Copia y pega todo el contenido en el Editor SQL y ejecútalo.
+    *   Esto creará todas las tablas (`profiles`, `levels`, `worlds`, etc.).
+    *   Configurará las políticas de seguridad (RLS).
+    *   Creará las funciones de administrador necesarias.
+
+### 3. Variables de Entorno
+Crea un archivo `.env` en la raíz del proyecto (basado en `.env.example`):
+
+```bash
+VITE_SUPABASE_URL=tu_url_de_supabase
+VITE_SUPABASE_ANON_KEY=tu_anon_key_de_supabase
+```
+
+### 4. Crear el Primer Administrador
+Como la aplicación protege las funciones de admin, necesitas crear tu primer usuario manualmente y elevarlo a rango 'admin':
+
+1.  Regístrate en la App (o crea un usuario desde el Auth de Supabase).
+2.  Ve a la tabla `public.profiles` en Supabase.
+3.  Edita tu usuario y cambia la columna `role` de `user` a `admin`.
+4.  ¡Listo! Ahora puedes acceder a `/admin.html`.
+
+### 5. Ejecutar Proyecto
+```bash
+pnpm run dev
+```
+
+---
+
+## 📂 Administrador (Admin Panel)
+Accede a `/admin.html` para gestionar:
+*   **Usuarios**: Crear, Editar, Eliminar (con Auth integrado).
+*   **Mundos y Fases**: Organizar el contenido educativo.
+*   **Niveles**: Editor visual de mapas (Drag & Drop) para crear puzzles.
+*   **Configuración**: Activar/Desactivar registros públicos.
+
+## ⚠️ Notas Importantes
+*   **Usuario Admin**: La creación de usuarios desde el Admin Panel usa la API de Supabase Client. Si los registros públicos están desactivados en Supabase, asegúrate de tener una sesión válida o usar la Service Key (si se implementa en backend).
+*   **Base de Datos**: El script `schema.sql` es idempotente (usa `if not exists`), pero ten cuidado al ejecutarlo en producción.

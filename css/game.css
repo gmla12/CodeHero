@@ -1,0 +1,702 @@
+/* JUEGO E INTERFAZ */
+.game-ui-container {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    background: #1a1a1a;
+    overflow: hidden;
+}
+
+/* Área Principal (Mapa + Timeline) */
+.game-main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    min-width: 0;
+    /* CRITICAL for flex child scrolling */
+    position: relative;
+    overflow: hidden;
+    /* Ensure it contains the timeline */
+}
+
+/* Línea de Tiempo */
+.timeline-area {
+    min-height: 50px;
+    height: 50px;
+    background: #252525;
+    border: 1px solid #444;
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    padding: 0 10px;
+    gap: 8px;
+    overflow-x: auto;
+    white-space: nowrap;
+    margin-bottom: 5px;
+    /* Spacing from controls */
+}
+
+.code-block {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 5px;
+    font-weight: bold;
+    font-size: 0.8rem;
+    color: #000;
+    animation: popIn 0.2s ease;
+    cursor: default;
+}
+
+@keyframes popIn {
+    from {
+        transform: scale(0);
+    }
+
+    to {
+        transform: scale(1);
+    }
+}
+
+.block-move {
+    background: #03dac6;
+}
+
+.block-turn {
+    background: #bb86fc;
+}
+
+/* Grid del Juego Engine */
+.game-container {
+    flex: 1;
+    background: #121212;
+    padding: 10px;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.game-grid {
+    display: grid;
+    gap: 2px;
+    background: #333;
+    padding: 5px;
+    border-radius: 8px;
+    position: relative;
+}
+
+/* MODALS */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.1);
+    /* Transparent for visibility */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+
+.modal-box {
+    background: #222;
+    border: 2px solid var(--primary);
+    padding: 20px;
+    border-radius: 15px;
+    width: 500px;
+    /* Widened to prevent overflow */
+    max-width: 90%;
+    text-align: center;
+    box-shadow: 0 0 20px rgba(0, 210, 255, 0.3);
+    animation: popIn 0.3s ease;
+    position: relative;
+    /* Ensure it respects initial layout */
+    margin: auto;
+    /* Ensure centering */
+}
+
+/* Draggable Handle Visuals */
+.modal-box h2 {
+    cursor: move;
+    /* Drag cursor */
+    user-select: none;
+    display: flex;
+    /* Centering */
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+}
+
+.modal-box h2::before {
+    content: '✥';
+    /* Move icon */
+    font-size: 1.2rem;
+    opacity: 0.5;
+}
+
+.hero-sprite {
+    position: absolute;
+    width: 40px;
+    height: 40px;
+    background: #444;
+    border-radius: 5px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 10;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+.star-pop {
+    animation: starPop 0.5s ease backwards;
+}
+
+@keyframes starPop {
+    0% {
+        transform: scale(0) rotate(-180deg);
+        opacity: 0;
+    }
+
+    80% {
+        transform: scale(1.2) rotate(10deg);
+    }
+
+    100% {
+        transform: scale(1) rotate(0);
+        opacity: 1;
+    }
+}
+
+.portal {
+    font-size: 1.5rem;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    animation: portalSpin 3s linear infinite;
+    filter: drop-shadow(0 0 5px var(--primary));
+}
+
+@keyframes portalSpin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* HUD */
+.hud-bar {
+    width: 100%;
+    height: 50px;
+    background: rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 15px;
+    box-sizing: border-box;
+    z-index: 100;
+}
+
+.hud-item {
+    display: flex;
+    align-items: center;
+}
+
+.hud-item.center {
+    background: rgba(0, 0, 0, 0.4);
+    padding: 5px 15px;
+    border-radius: 20px;
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.status-icon {
+    font-size: 1.5rem;
+    opacity: 0.2;
+    filter: grayscale(1);
+    transition: all 0.3s ease;
+}
+
+.status-icon.active {
+    opacity: 1;
+    filter: grayscale(0) drop-shadow(0 0 5px gold);
+    transform: scale(1.2);
+}
+
+.cell {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 8px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 1.5rem;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.5);
+}
+
+.wall {
+    background: #555;
+    box-shadow: inset 0 0 10px #000;
+}
+
+.path {
+    background: #2a2a2a;
+}
+
+.key {
+    background: rgba(255, 215, 0, 0.1);
+    border: 2px dashed gold;
+}
+
+.door {
+    background: rgba(207, 102, 121, 0.2);
+    border: 2px solid var(--danger);
+}
+
+.start {
+    border: 2px solid var(--secondary);
+}
+
+.end {
+    border: 2px solid var(--primary);
+}
+
+
+/* CONTROLES Y SIDEBAR */
+.game-controls-wrapper {
+    background: #1e1e1e;
+    border-top: 1px solid #333;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+/* Estilo unificado (Base) */
+.btn-game,
+.btn-tool {
+    background: var(--card-bg);
+    border: 1px solid var(--card-border);
+    backdrop-filter: blur(5px);
+    color: white;
+    border-radius: 12px;
+    font-size: 1.5rem;
+    height: 55px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0, 0, 0, 0.3);
+    transition: 0.2s;
+}
+
+.btn-tool:active,
+.btn-game:active {
+    transform: translateY(2px);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.3);
+}
+
+.btn-delete {
+    color: #ff6b6b;
+    border-color: rgba(255, 107, 107, 0.3);
+}
+
+.btn-loop-start {
+    background: #2ed573;
+    color: #000;
+    font-weight: bold;
+}
+
+.btn-loop-end {
+    background: #ff4757;
+    color: #fff;
+    display: none;
+    animation: pulse 1s infinite;
+}
+
+.btn-run {
+    background: var(--secondary);
+    color: black;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    font-size: 1rem;
+}
+
+/* Botones en fila para Móvil (CSS GRID FORCE) */
+.game-controls {
+    display: grid !important;
+    grid-template-columns: repeat(6, 1fr) !important;
+    grid-template-rows: auto auto auto auto !important;
+    /* 4 Rows now */
+    gap: 10px !important;
+    width: 100% !important;
+    max-width: 400px !important;
+    margin: 0 auto !important;
+}
+
+/* GHOST CONTAINERS FOR MOBILE GRID */
+.control-group-tools,
+.control-group-move {
+    display: contents !important;
+}
+
+/* Fila 1: Herramientas (Mitad y Mitad) */
+.btn-tool {
+    grid-column: span 3 !important;
+    grid-row: 1 !important;
+    font-size: 0.9rem !important;
+    height: 50px !important;
+    width: 100% !important;
+    order: unset !important;
+}
+
+/* Fila 2: Movimiento y Loops */
+.btn-game:not(.btn-run) {
+    width: 100% !important;
+    height: 55px !important;
+}
+
+/* Explicit Grid Placement for Moves */
+#btn-turn-left {
+    grid-row: 2 !important;
+    grid-column: 1 / span 2 !important;
+}
+
+#btn-move-forward {
+    grid-row: 2 !important;
+    grid-column: 3 / span 2 !important;
+}
+
+#btn-turn-right {
+    grid-row: 2 !important;
+    grid-column: 5 / span 2 !important;
+}
+
+/* Loop Controls (Row 3 - Dedicated) */
+.loop-controls {
+    grid-row: 3 !important;
+    grid-column: 1 / -1 !important;
+    pointer-events: auto !important;
+    z-index: 5;
+    /* display: flex !important; Removed to allow JS toggle */
+    justify-content: center !important;
+    gap: 10px !important;
+    padding: 5px 0 !important;
+}
+
+/* Fila 4: Ejecutar */
+.btn-run {
+    grid-row: 4 !important;
+    grid-column: 1 / -1 !important;
+    width: 100% !important;
+    margin-top: 5px !important;
+}
+
+/* FIX CRÍTICO MODAL BUTTONS */
+.modal-box .btn-game {
+    width: auto !important;
+    max-width: 100% !important;
+    min-width: 80px !important;
+    /* Reduced from 140px */
+    height: auto !important;
+    min-height: 50px !important;
+    padding: 10px 5px !important;
+    /* Reduced from 20px */
+    font-size: 0.9rem !important;
+    white-space: normal !important;
+    /* Permitir salto de línea */
+    word-wrap: break-word !important;
+    line-height: 1.2 !important;
+    text-align: center !important;
+}
+
+.code-console {
+    background: rgba(0, 0, 0, 0.6);
+    color: #4cd137;
+    font-family: 'Consolas', 'Monaco', monospace;
+    font-size: 0.8rem;
+    padding: 8px;
+    height: 60px;
+    overflow-y: auto;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* DESKTOP / TABLET LANDSCAPE */
+@media (min-width: 768px) {
+    .game-ui-container {
+        flex-direction: row;
+        /* Sidebar Layout */
+    }
+
+    .game-main-area {
+        flex: 1;
+        height: 100%;
+    }
+
+    /* SIDEBAR COMPACTA */
+    .game-controls-wrapper {
+        width: 380px;
+        /* Fixed Sidebar width */
+        height: 100%;
+        border-top: none;
+        border-left: 1px solid #333;
+        padding: 20px;
+        background: #1a1a1a;
+        z-index: 10;
+        box-shadow: -4px 0 10px rgba(0, 0, 0, 0.5);
+        overflow-y: auto;
+        /* Scroll if content (timeline) grows too much */
+        gap: 20px;
+        display: flex;
+        flex-direction: column;
+    }
+
+    /* TIMELINE MULTILINEA */
+    .timeline-area {
+        height: auto;
+        /* Allow growth */
+        min-height: 100px;
+        flex-wrap: wrap;
+        /* WRAP ITEMS */
+        white-space: normal;
+        /* Allow wrapping */
+        overflow-x: hidden;
+        margin-bottom: 20px;
+        border: 1px dashed #444;
+        border-radius: 8px;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.2);
+    }
+
+    .timeline-area .code-block {
+        margin: 3px;
+    }
+
+    /* DESKTOP SIDEBAR COLUMN LAYOUT */
+    .game-controls {
+        display: flex;
+        flex-direction: column;
+        /* Vertical Stack */
+        gap: 20px;
+        width: 100%;
+        grid-template-columns: unset !important;
+        grid-template-rows: unset !important;
+        max-width: none !important;
+    }
+
+    .game-controls * {
+        grid-column: unset !important;
+        grid-row: unset !important;
+    }
+
+    /* RESET DISPLAY CONTENTS FOR DESKTOP */
+    .control-group-tools,
+    .control-group-move {
+        display: flex !important;
+        width: 100%;
+    }
+
+    /* CONSOLA MAS ALTA */
+    .code-console {
+        height: 300px;
+        /* Taller console */
+        font-size: 0.9rem;
+    }
+
+    /* ORDENAMIENTO LOGICO */
+    /* 1. Herramientas (Side by Side) */
+    .control-group-tools {
+        justify-content: space-between;
+        gap: 10px;
+    }
+
+    .btn-tool {
+        height: 48px;
+        font-size: 0.9rem;
+        flex: 1;
+        /* Equal width */
+        width: auto !important;
+        padding: 0 15px;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        border-radius: 8px;
+    }
+
+    /* 2. Movimiento (Centered Group) */
+    .control-group-move {
+        justify-content: center;
+        gap: 10px;
+    }
+
+    .btn-game:not(.btn-run):not(.btn-loop-start):not(.btn-loop-end) {
+        height: 48px;
+        width: 48px !important;
+        font-size: 1.5rem;
+    }
+
+    #btn-turn-left,
+    #btn-move-forward,
+    #btn-turn-right {
+        order: unset !important;
+    }
+
+    /* 3. Loop Controls (Medio/Der) */
+    .loop-controls {
+        /* display: flex !important; Removed to allow JS toggle */
+        flex-direction: row !important;
+        gap: 10px;
+        margin: 0 !important;
+        background: none !important;
+        padding: 0 !important;
+        justify-content: center;
+    }
+
+    .loop-controls button {
+        height: 48px;
+        padding: 0 15px;
+        font-size: 0.9rem;
+    }
+
+    /* 4. RUN (Final) */
+    .btn-run {
+        height: 48px;
+        width: 100% !important;
+        /* Full width in sidebar for call to action */
+        margin-top: 10px;
+    }
+
+    /* Hover effects for Desktop */
+    .btn-game:hover,
+    .btn-tool:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        filter: brightness(1.2);
+    }
+
+    .btn-game:active,
+    .btn-tool:active {
+        transform: translateY(1px);
+        box-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+    }
+}
+
+/* Active Block Highlight Animation */
+.active-block {
+    border-color: #ffffff !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    transform: scale(1.15);
+    box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+    z-index: 100;
+    transition: all 0.1s ease-out;
+    font-weight: 800;
+}
+
+/* Console Highlight */
+.console-line {
+    padding: 2px 5px;
+    border-radius: 4px;
+    transition: background 0.2s;
+}
+
+.active-console-line {
+    background: rgba(46, 213, 115, 0.2);
+    /* Success Green with opacity */
+    border-left: 3px solid #2ed573;
+    color: #fff !important;
+}
+
+/* EDITABLE BLOCKS */
+.code-block {
+    cursor: pointer !important;
+    position: relative;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.code-block:hover {
+    transform: scale(1.05);
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
+    z-index: 10;
+}
+
+.code-block::after {
+    content: '✏️';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    font-size: 0.8rem;
+    opacity: 0;
+    transition: opacity 0.2s;
+    background: #222;
+    border-radius: 50%;
+    padding: 2px;
+}
+
+.code-block:hover::after {
+    opacity: 1;
+}
+
+/* --- LOOP BLOCK VISUALIZATION --- */
+.loop-block {
+    display: inline-flex !important;
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    padding: 0 !important;
+    background: rgba(255, 215, 0, 0.1) !important;
+    border: 1px solid var(--gold) !important;
+    min-height: 50px;
+    height: auto;
+    overflow: hidden;
+}
+
+.loop-info {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    background: rgba(255, 215, 0, 0.2);
+    padding: 2px 5px;
+    border-bottom: 1px solid rgba(255, 215, 0, 0.2);
+    font-size: 0.7rem;
+    color: var(--gold);
+    gap: 5px;
+}
+
+.loop-content {
+    display: flex;
+    flex-wrap: nowrap;
+    /* Keep horizontal */
+    padding: 5px;
+    gap: 4px;
+    align-items: center;
+    overflow-x: auto;
+    /* Scroll if too many inside */
+    max-width: 100%;
+    scrollbar-width: none;
+    /* Hide scrollbar */
+}
+
+.mini-block {
+    width: 20px;
+    height: 20px;
+    border-radius: 4px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 0.8rem;
+    color: black;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+}

@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>CodeHero: Aprende Lógica</title>
+    <link rel="stylesheet" href="css/components.css">
+    <link rel="stylesheet" href="css/game.css">
+    <link rel="stylesheet" href="css/style.css?v=17">
+    <style>
+        /* CRITICAL LOGIN STYLES (ISOLATED) */
+        #screen-login.active {
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            background: radial-gradient(circle at center, #1a2a44 0%, #0f172a 100%) !important;
+            position: fixed !important;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 9999 !important;
+        }
+
+        #screen-login:not(.active) {
+            display: none !important;
+        }
+
+        /* Renamed to avoid conflicts */
+        .login-card-iso {
+            background: rgba(15, 23, 42, 0.6) !important;
+            backdrop-filter: blur(12px) !important;
+            border: 1px solid rgba(0, 210, 255, 0.3) !important;
+            box-shadow: 0 0 30px rgba(0, 210, 255, 0.1) !important;
+            border-radius: 20px !important;
+            padding: 40px !important;
+            display: flex !important;
+            flex-direction: column !important;
+            gap: 20px !important;
+            align-items: stretch !important;
+            justify-content: center !important;
+            width: 90% !important;
+            /* Mobile safe */
+            max-width: 400px !important;
+            margin: auto !important;
+        }
+
+        .login-input-iso {
+            width: 100% !important;
+            padding: 15px !important;
+            font-size: 1rem !important;
+            border-radius: 8px !important;
+            background: rgba(0, 0, 0, 0.5) !important;
+            border: 2px solid #00d2ff !important;
+            color: white !important;
+            box-sizing: border-box !important;
+            margin-bottom: 0 !important;
+        }
+
+        .login-btn-iso {
+            width: 100% !important;
+            padding: 15px !important;
+            font-size: 1.1rem !important;
+            font-weight: bold !important;
+            border-radius: 8px !important;
+            min-height: 50px !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: center !important;
+            text-transform: uppercase !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+            cursor: pointer !important;
+            border: none !important;
+        }
+
+        .btn-primary-iso {
+            background: linear-gradient(45deg, #00d2ff, #3a86ff) !important;
+            color: black !important;
+            box-shadow: 0 0 15px rgba(0, 210, 255, 0.5) !important;
+        }
+
+        .btn-secondary-iso {
+            background: transparent !important;
+            border: 1px solid rgba(255, 255, 255, 0.3) !important;
+            color: #aaa !important;
+        }
+    </style>
+    <link rel="manifest" href="manifest.json">
+    <link rel="apple-touch-icon" href="img/icon.png">
+    <script>
+        if ('serviceWorker' in navigator) {
+            // Validación de protocolo para evitar errores en local (file://)
+            if (window.location.protocol.startsWith('http')) {
+                navigator.serviceWorker.register('sw.js')
+                    .then(() => console.log('Service Worker Registrado'))
+                    .catch((err) => console.log('SW Fallo:', err));
+            } else {
+                console.log('PWA: Service Worker omitido en protocolo local (file://)');
+            }
+        }
+    </script>
+
+</head>
+
+<body>
+
+    <div id="screen-login" class="screen active">
+        <h1
+            style="text-align:center; color:var(--primary); margin-top:40px; text-transform:uppercase; letter-spacing:2px; font-size:2.5rem; text-shadow:0 0 10px var(--primary)">
+            Code Hero</h1>
+        <p style="text-align:center; color:var(--text-muted); margin-top:-10px">¿Quién eres hoy?</p>
+
+        <div id="login-form-container" class="login-card-iso">
+            <input type="email" id="login-email" class="login-input-iso" placeholder="Identificación (Email) 📧">
+            <input type="password" id="login-password" class="login-input-iso" placeholder="Código de Acceso 🔑">
+
+            <button class="login-btn-iso btn-primary-iso" id="btn-cloud-login">INICIAR MISIÓN 🚀</button>
+            <button class="login-btn-iso btn-secondary-iso" id="btn-cloud-signup"
+                style="display: none !important;">RECLUTAR NUEVO HÉROE</button>
+
+            <p id="login-msg"
+                style="color:#ff006e; text-align:center; min-height:20px; font-size:0.9rem; margin-top:10px"></p>
+        </div>
+    </div>
+
+    <div id="screen-creator" class="screen">
+        <div class="creator-layout">
+            <button class="fab-back">⬅</button>
+            <button class="fab-save" id="btn-save-user">GUARDAR</button>
+
+            <div class="avatar-preview-area" id="creator-svg">
+                <!-- SVG Inyectado aquí -->
+            </div>
+
+            <div class="controls-area" id="controls-list">
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-dash" class="screen">
+        <div
+            style="padding:20px; background:var(--card-bg); display:flex; align-items:center; gap:15px; border-bottom:1px solid #333">
+            <div id="dash-avatar" style="width:60px;height:60px;border-radius:50%;overflow:hidden;background:#000">
+            </div>
+            <div>
+                <h2 id="dash-name" style="margin:0; font-size:1.2rem">Héroe</h2>
+                <div id="dash-score" style="color:var(--primary)">0 Pts</div>
+            </div>
+            <button id="btn-edit-avatar"
+                style="margin-left:auto; background:none; border:none; font-size:1.5rem; cursor:pointer; filter:drop-shadow(0 0 5px var(--accent))">✏️</button>
+        </div>
+
+        <div style="padding:10px 20px 0 20px">
+            <button id="btn-leaderboard" class="card"
+                style="width:100%; justify-content:center; background:rgba(255,215,0,0.1); border-color:var(--gold); color:var(--gold); font-weight:bold">
+                🏆 VER RANKING GLOBAL
+            </button>
+        </div>
+
+        <div class="scroll-area">
+            <h3 style="color:var(--text-muted); margin-left:10px; font-size:0.9rem">MISIONES DISPONIBLES</h3>
+            <div id="content-area"></div>
+
+            <!-- DEV TOOLS -->
+            <!-- DEV TOOLS -->
+            <div id="dev-tools-panel"
+                style="margin-top:30px; padding:20px; border-top:1px solid #333; text-align:center; opacity:0.6; display:none">
+                <p style="font-size:0.7rem; text-transform:uppercase; letter-spacing:1px; margin-bottom:10px">
+                    Herramientas de Desarrollador</p>
+                <div style="display:flex; gap:10px; justify-content:center">
+                    <button id="btn-dev-unlock" class="btn-tool" style="background:#222; border-color:#444">🔓
+                        Desbloquear Todo</button>
+                    <button id="btn-dev-update" class="btn-tool" style="background:#222; border-color:#444">🔄
+                        Forzar Update</button>
+                </div>
+            </div>
+            <div style="height:50px"></div>
+        </div>
+
+        <button class="card" style="margin:20px; justify-content:center; background:#222; color:#cf6679"
+            id="btn-logout">Cerrar Sesión</button>
+    </div>
+
+    <div id="screen-game" class="screen">
+        <!-- GAME HUD -->
+        <div id="game-hud" class="hud-bar">
+            <div class="hud-item" style="flex:1; justify-content:flex-start">
+                <button id="btn-close-game"
+                    style="background:none; border:none; color:white; margin-right:10px; font-size:1.2rem; cursor:pointer">❌</button>
+                <span style="font-size:1.2rem; margin-right:5px">🚩</span>
+                <span id="hud-level-name"
+                    style="font-weight:bold; white-space:nowrap; overflow:hidden; text-overflow:ellipsis">Nivel 1</span>
+            </div>
+            <div class="hud-item center">
+                <span style="font-size:0.8rem; color:var(--text-muted); margin-right:5px">PASOS</span>
+                <span id="hud-steps"
+                    style="font-size:1.2rem; font-weight:bold; font-family:'Monaco', monospace">0/0</span>
+            </div>
+            <div class="hud-item" style="flex:1; justify-content:flex-end">
+                <button id="btn-help"
+                    style="background:none; border:1px solid rgba(255,255,255,0.2); color:white; border-radius:50%; width:30px; height:30px; font-weight:bold; margin-right:10px">?</button>
+                <div id="hud-key" class="hud-icon status-icon">🔑</div>
+            </div>
+        </div>
+
+        <div class="game-ui-container">
+            <!-- AREA PRINCIPAL: Juego y Timeline -->
+            <div class="game-main-area">
+                <div class="game-container">
+                    <div id="game-engine"></div>
+                </div>
+            </div>
+
+            <!-- AREA LATERAL/INFERIOR: Controles -->
+            <div class="game-controls-wrapper">
+                <div id="timeline" class="timeline-area">
+                    <span style="color:#666; font-size:0.8rem; margin:auto">Añade comandos...</span>
+                </div>
+
+                <div class="game-controls">
+                    <!-- Herramientas (Deshacer/Borrar) -->
+                    <div class="control-group-tools">
+                        <button class="btn-tool btn-delete" id="btn-undo">⬅ Deshacer</button>
+                        <button class="btn-tool" id="btn-clear">🗑️ Borrar</button>
+                    </div>
+
+                    <!-- Botones Principales (Movimiento) -->
+                    <div class="control-group-move">
+                        <button class="btn-game" id="btn-turn-left">↺</button>
+                        <button class="btn-game" id="btn-move-forward"
+                            style="background: var(--primary); color:black; font-weight:bold">⬆</button>
+                        <button class="btn-game" id="btn-turn-right">↻</button>
+                    </div>
+
+                    <!-- Botones Loop (Hidden by default) -->
+                    <div class="loop-controls" style="display: none;">
+                        <button id="btn-loop-start" class="btn-game btn-loop-start">Grabar 🔴</button>
+                        <button id="btn-loop-end" class="btn-game btn-loop-end">Stop ⏹</button>
+                    </div>
+
+                    <!-- Botón Ejecutar -->
+                    <button class="btn-game btn-run" id="btn-run">▶ EJECUTAR</button>
+                </div>
+
+                <div id="code-console" class="code-console">
+                    // Tu código JavaScript aparecerá aquí...
+                </div>
+            </div>
+        </div>
+
+        <div id="instruction-modal" class="modal-overlay" style="display:none">
+            <div class="modal-box">
+                <h2 id="modal-title" style="color:var(--primary)">Objetivo</h2>
+                <p id="modal-desc" style="line-height:1.5">Lleva al robot a la bandera.</p>
+                <small style="color:#aaa; display:block; margin-top:20px">(Toca para cerrar)</small>
+            </div>
+        </div>
+
+        <div id="victory-modal" class="modal-overlay" style="display:none">
+            <div class="modal-box" style="border-color:var(--gold); box-shadow:0 0 50px rgba(255,215,0,0.3)">
+                <h2 style="color:var(--gold); font-size:2rem; margin:0">¡VICTORIA! 🎉</h2>
+                <div id="victory-stars" style="font-size:3rem; margin:20px 0; letter-spacing:10px">☆☆☆</div>
+                <div id="victory-details" style="color:white; margin-bottom:20px; line-height:1.6">
+                    Pasos: 0<br>
+                    <small>Meta: 0</small>
+                </div>
+                <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap">
+                    <button class="btn-game" id="btn-restart">🔄 Repetir</button>
+                    <button class="btn-game" style="background:#444; color:white"
+                        onclick="CodeHero.Managers.LevelManager.goToDashboard()">🚪 Salir</button>
+                    <button class="btn-game" style="background:var(--primary); color:black"
+                        id="btn-next-level">Siguiente ▶</button>
+                </div>
+            </div>
+        </div>
+
+        <div id="defeat-modal" class="modal-overlay" style="display:none">
+            <div class="modal-box" style="border-color:var(--danger); box-shadow:0 0 50px rgba(255,82,82,0.3)">
+                <h2 style="color:var(--danger); font-size:2rem; margin:0">¡OH NO! 💥</h2>
+                <p style="color:white; margin:20px 0; font-size:1.2rem">Algo salió mal en el código.</p>
+                <div style="display:flex; gap:10px; justify-content:center">
+                    <button class="btn-game" id="btn-retry-defeat" style="background:var(--danger); color:white">🔄
+                        Intentar de Nuevo</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- MODAL EDIT BLOCK -->
+        <div id="modal-edit-block" class="modal-overlay" style="display: none;">
+            <div class="modal-box" style="width: 350px;">
+                <h2 style="color: var(--primary);">✏️ Editar Paso</h2>
+
+                <div id="edit-content-command" style="display:none; flex-direction:column; gap:10px;">
+                    <p>Elige una nueva acción:</p>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                        <button class="btn-game" onclick="CodeHero.UI.Timeline.applyEdit('moveForward')">⬆️
+                            Avanzar</button>
+                        <button class="btn-game" onclick="CodeHero.UI.Timeline.applyEdit('turnLeft')">⬅️
+                            Izquierda</button>
+                        <button class="btn-game" onclick="CodeHero.UI.Timeline.applyEdit('turnRight')">➡️
+                            Derecha</button>
+                    </div>
+                </div>
+
+                <div id="edit-content-loop" style="display:none; flex-direction:column; gap:10px;">
+                    <p>Repeticiones:</p>
+                    <div style="display:flex; justify-content:center; align-items:center; gap:20px;">
+                        <button class="btn-game" style="width:40px;" onclick="window.adjustEditLoop(-1)">➖</button>
+                        <span id="edit-loop-count" style="font-size:2rem; font-weight:bold; color:var(--gold)">4</span>
+                        <button class="btn-game" style="width:40px;" onclick="window.adjustEditLoop(1)">➕</button>
+                    </div>
+
+                    <!-- Add Steps -->
+                    <p style="margin-top:10px; margin-bottom:5px">Agregar Paso:</p>
+                    <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:5px;">
+                        <button class="btn-game" style="font-size:0.9rem"
+                            onclick="CodeHero.UI.Timeline.addLoopStep('moveForward')">⬆️ Avz</button>
+                        <button class="btn-game" style="font-size:0.9rem"
+                            onclick="CodeHero.UI.Timeline.addLoopStep('turnLeft')">⬅️ Izq</button>
+                        <button class="btn-game" style="font-size:0.9rem"
+                            onclick="CodeHero.UI.Timeline.addLoopStep('turnRight')">➡️ Der</button>
+                    </div>
+
+                    <!-- Inner Steps Container -->
+                    <div id="edit-loop-steps-container"
+                        style="background:rgba(0,0,0,0.3); padding:10px; border-radius:8px; margin-top:5px">
+                        <small style="color:#aaa; display:block; margin-bottom:5px">Pasos Internos:</small>
+                        <div id="edit-loop-steps"
+                            style="display:flex; flex-direction:column; gap:5px; max-height:150px; overflow-y:auto">
+                            <!-- Dynamic Content -->
+                        </div>
+                    </div>
+
+                    <button class="btn-game btn-run" onclick="CodeHero.UI.Timeline.applyEditLoop()">✅ Guardar
+                        Bucle</button>
+                </div>
+
+                <hr style="border-color:rgba(255,255,255,0.1); width:100%; margin: 15px 0;">
+
+                <div style="display:flex; justify-content:space-between; gap:10px;">
+                    <button class="btn-game" style="background:#ff4757; flex:1;"
+                        onclick="CodeHero.UI.Timeline.deleteCurrentEdit()">🗑️ Borrar</button>
+                    <button class="btn-game" style="background:#555; flex:1;"
+                        onclick="CodeHero.UI.Timeline.closeEditModal()">❌ Cancelar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Loop Configuration Modal -->
+        <div id="loop-config-modal" class="modal-overlay" style="display:none">
+            <div class="modal-box" style="border-color:var(--success); box-shadow:0 0 30px rgba(46, 213, 115, 0.4)">
+                <h2 style="color:var(--success); margin-bottom:15px">Configurar Bucle 🔄</h2>
+                <p style="color:#ccc; margin-bottom:20px">¿Cuántas veces quieres repetir estas acciones?</p>
+
+                <div style="display:flex; align-items:center; justify-content:center; gap:15px; margin-bottom:25px">
+                    <button class="btn-game" style="width:40px; height:40px; padding:0"
+                        onclick="window.adjustLoopCount(-1)">-</button>
+                    <span id="loop-count-display"
+                        style="font-size:2.5rem; font-weight:bold; color:white; width:60px">4</span>
+                    <button class="btn-game" style="width:40px; height:40px; padding:0"
+                        onclick="window.adjustLoopCount(1)">+</button>
+                </div>
+
+                <div style="display:flex; gap:10px; justify-content:center">
+                    <button class="btn-game btn-delete" onclick="window.cancelLoopConfig()">Cancelar</button>
+                    <button class="btn-game" style="background:var(--success); color:black; font-weight:bold"
+                        onclick="window.confirmLoopConfig()">Confirmar ✅</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="screen-leaderboard" class="screen">
+        <div style="padding:20px; display:flex; align-items:center; gap:10px">
+            <button class="fab-back" style="position:relative; top:0; left:0">⬅</button>
+            <h2 style="margin:0; text-transform:uppercase; letter-spacing:1px; color:var(--gold)">Ranking</h2>
+        </div>
+        <div class="scroll-area" id="leaderboard-list"></div>
+    </div>
+
+    <!-- Core & Config -->
+    <script type="module" src="js/services/supabase.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/utils/helpers.js"></script>
+    <script src="js/utils/Draggable.js"></script>
+    <script src="js/core/GameState.js"></script>
+
+    <!-- Data -->
+    <!-- Data (Legacy files moved to Supabase) -->
+    <!-- <script src="js/data/levels.js"></script> -->
+    <!-- <script src="js/data/worlds.js"></script> -->
+
+    <!-- Core Logic -->
+    <script src="js/core/LoopSystem.js"></script>
+
+    <!-- UI -->
+    <script src="js/ui/AvatarEditor.js"></script>
+    <script src="js/ui/UIRenderer.js"></script>
+    <script src="js/ui/GridRenderer.js"></script>
+    <script src="js/ui/Timeline.js"></script>
+    <script src="js/ui/DashboardRenderer.js"></script>
+
+    <!-- Managers -->
+    <script src="js/managers/DataManager.js?v=18"></script>
+    <script src="js/managers/BotManager.js?v=18"></script>
+    <script src="js/managers/UserManager.js?v=18"></script>
+    <script src="js/managers/LevelManager.js?v=18"></script>
+    <script src="js/core/GameEngine.js"></script>
+
+    <!-- Main Entry -->
+    <script src="js/main.js"></script>
+</body>
+
+</html>

@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CodeHero Admin Dashboard</title>
+    <!-- Fallback Inline to ensure dark mode immediately -->
+    <style>
+        body {
+            background-color: #0f172a;
+            color: #ffffff;
+            font-family: sans-serif;
+        }
+
+        /* Failsafe: Ensure Login is visible if JS dies */
+        #admin-login {
+            display: flex !important;
+        }
+
+        /* JS will toggle this off if session exists, via inline style */
+    </style>
+    <link rel="stylesheet" href="css/style.css?v=2024">
+    <link rel="stylesheet" href="css/components.css?v=2024">
+    <link rel="stylesheet" href="css/admin.css?v=2024">
+    <script type="module" src="js/services/supabase.js"></script>
+    <script>
+        // GLOBAL ERROR HANDLER
+        window.onerror = function (msg, url, lineNo, columnNo, error) {
+            alert("JS ERROR:\n" + msg + "\nLine: " + lineNo);
+            return false;
+        };
+        // Minimal Global Setup for Seeding
+        window.CodeHero = { Data: {} };
+    </script>
+    <script src="js/data/levels.js"></script>
+    <script type="module" src="js/admin/AdminApp.js"></script>
+</head>
+
+<body>
+    <div id="admin-app">
+        <aside class="sidebar">
+            <h2>CodeHero <span class="badge">ADMIN</span></h2>
+            <nav>
+                <button class="nav-btn active" data-view="dashboard">📊 Dashboard</button>
+                <button class="nav-btn" data-view="levels">🗺️ Niveles</button>
+                <button class="nav-btn" data-view="phases">🌍 Mundos y Fases</button>
+                <button class="nav-btn" data-view="users">👥 Usuarios</button>
+                <button class="nav-btn" data-view="settings">⚙️ Configuración</button>
+            </nav>
+            <div class="user-profile">
+                <span id="admin-name">Cargando...</span>
+                <button id="btn-logout">Salir</button>
+            </div>
+        </aside>
+
+        <main class="content">
+            <header>
+                <h1 id="page-title">Dashboard</h1>
+                <div class="actions" id="page-actions">
+                    <button class="btn-secondary" id="btn-seed-db" title="Importar Niveles Locales">🔄 Restaurar
+                        Datos</button>
+                </div>
+            </header>
+
+            <div id="view-container">
+                <!-- Views injected here -->
+                <div id="view-dashboard" class="view active">
+                    <div class="stats-grid">
+                        <div class="card stat">
+                            <h3>Usuarios</h3>
+                            <p class="number" id="stat-users">-</p>
+                        </div>
+                        <div class="card stat">
+                            <h3>Niveles</h3>
+                            <p class="number" id="stat-levels">-</p>
+                        </div>
+                        <div class="card stat">
+                            <h3>Mundos</h3>
+                            <p class="number" id="stat-worlds">-</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Levels View -->
+                <div id="view-levels" class="view">
+                    <div class="toolbar">
+                        <button class="btn-primary" id="btn-add-level">+ Nuevo Nivel</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Título</th>
+                                    <th>Tipo</th>
+                                    <th>Mundo</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="list-levels"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Worlds View -->
+                <div id="view-worlds" class="view">
+                    <div class="toolbar">
+                        <button class="btn-primary" id="btn-add-world">+ Nuevo Mundo</button>
+                    </div>
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Título</th>
+                                    <th>Descripción</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="list-worlds"></tbody>
+                        </table>
+                    </div>
+
+                </div>
+
+                <!-- Settings View -->
+                <div id="view-settings" class="view">
+                    <!-- Dynamic Content -->
+                </div>
+
+                <!-- Users View -->
+                <div id="view-users" class="view">
+                    <div class="table-container">
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Username</th>
+                                    <th>Role</th>
+                                    <th>Created</th>
+                                </tr>
+                            </thead>
+                            <tbody id="list-users"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Editor View (Full Screen) -->
+            <div id="view-editor" class="view">
+                <div id="view-editor-content"></div>
+            </div>
+    </div>
+    </main>
+    </div>
+
+    <!-- Modals Removed -->
+    <!-- Login Overlay -->
+
+    <!-- Login Overlay -->
+    <div id="admin-login" class="screen full-center">
+        <div class="card login-box">
+            <h2>Acceso Administrativo</h2>
+            <input type="email" id="email" placeholder="Email">
+            <input type="password" id="password" placeholder="Password">
+            <button id="btn-login" class="btn-primary">Entrar</button>
+            <p id="login-error" class="error"></p>
+        </div>
+    </div>
+</body>
+
+</html>
