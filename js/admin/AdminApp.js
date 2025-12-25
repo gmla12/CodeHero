@@ -990,9 +990,8 @@ class AdminApp {
                 // Let's assume standard signUp works.
 
                 // Safe Env Check
-                const viteEnv = (import.meta && import.meta.env) ? import.meta.env : {};
-                const sUrl = viteEnv.VITE_SUPABASE_URL;
-                const sKey = viteEnv.VITE_SUPABASE_ANON_KEY;
+                const sUrl = (import.meta.env && import.meta.env.VITE_SUPABASE_URL);
+                const sKey = (import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY);
 
                 if (!sUrl) {
                     this.showError("Missing VITE_SUPABASE_URL. Check Vercel Envs.");
