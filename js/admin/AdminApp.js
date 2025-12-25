@@ -989,7 +989,17 @@ class AdminApp {
                 // But the user said "checking email is disabled", implying they can config Supabase.
                 // Let's assume standard signUp works.
 
-                const tempSupa = createClient(import.meta.env.VITE_SUPABASE_URL, import.meta.env.VITE_SUPABASE_ANON_KEY, {
+                // Safe Env Check
+                const viteEnv = (import.meta && import.meta.env) ? import.meta.env : {};
+                const sUrl = viteEnv.VITE_SUPABASE_URL;
+                const sKey = viteEnv.VITE_SUPABASE_ANON_KEY;
+
+                if (!sUrl) {
+                    this.showError("Missing VITE_SUPABASE_URL. Check Vercel Envs.");
+                    return;
+                }
+
+                const tempSupa = createClient(sUrl, sKey, {
                     auth: {
                         persistSession: false, // Critical: user in memory only
                         autoRefreshToken: false,
