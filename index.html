@@ -91,14 +91,13 @@
     <link rel="apple-touch-icon" href="img/icon.png">
     <script>
         if ('serviceWorker' in navigator) {
-            // Validación de protocolo para evitar errores en local (file://)
-            if (window.location.protocol.startsWith('http')) {
-                navigator.serviceWorker.register('sw.js')
-                    .then(() => console.log('Service Worker Registrado'))
-                    .catch((err) => console.log('SW Fallo:', err));
-            } else {
-                console.log('PWA: Service Worker omitido en protocolo local (file://)');
-            }
+            // EMERGENCY: Unregister all SWs to fix Stale Cache / Deploy issues
+            navigator.serviceWorker.getRegistrations().then(function (registrations) {
+                for (let registration of registrations) {
+                    registration.unregister();
+                }
+                console.log('SW: Unregistered all service workers to force refresh.');
+            });
         }
     </script>
 
