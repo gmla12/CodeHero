@@ -1,9 +1,15 @@
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 // Load from Runtime Config (env.js) or Fallback
+// Load from Runtime Config (env.js) or Fallback
 const env = window.ENV || {};
-const supabaseUrl = env.VITE_SUPABASE_URL || import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = env.VITE_SUPABASE_ANON_KEY || import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Safe access to import.meta.env (Vite replaces this string during build, 
+// but in raw source it crashes if not checked).
+const viteEnv = (typeof import.meta !== 'undefined' && import.meta.env) ? import.meta.env : {};
+
+const supabaseUrl = env.VITE_SUPABASE_URL || viteEnv.VITE_SUPABASE_URL;
+const supabaseKey = env.VITE_SUPABASE_ANON_KEY || viteEnv.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('YOUR_SUPABASE_URL')) {
     console.warn('Supabase credentials missing! Check .env file.');
