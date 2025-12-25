@@ -11,8 +11,6 @@ const ASSETS = [
     './js/config.js',
     './js/utils/helpers.js',
     './js/core/GameState.js',
-    './js/data/levels.js',
-    './js/data/worlds.js',
     './js/core/LoopSystem.js',
     './js/ui/AvatarEditor.js',
     './js/ui/UIRenderer.js',
@@ -24,8 +22,7 @@ const ASSETS = [
     './js/managers/UserManager.js',
     './js/managers/LevelManager.js',
     './js/core/GameEngine.js',
-    './js/main.js',
-    './img/icon.png'
+    './js/main.js'
 ];
 
 self.addEventListener('install', (e) => {
