@@ -55,6 +55,9 @@ pnpm run dev
 Accede a `/admin.html` para gestionar:
 *   **Usuarios**: Crear, Editar, Eliminar (con Auth integrado).
 *   **Mundos y Fases**: Organizar el contenido educativo.
+*   **Contenido Actual**:
+    *   **Mundo 1 (Cyberpunk)**: 13 Niveles (Algoritmos, Bucles, Condicionales).
+    *   **Mundo 2 (Matrix)**: 5 Niveles (Debugging y Refactorización) - *¡NUEVO!*
 *   **Niveles**: Editor visual de mapas (Drag & Drop) para crear puzzles.
 *   **Configuración**: Activar/Desactivar registros públicos.
 
