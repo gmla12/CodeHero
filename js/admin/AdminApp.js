@@ -1050,11 +1050,30 @@ class AdminApp {
 
             } else {
                 // UPDATE USER (Profile only)
-                // Assuming we only update Profile fields here. Email update handles separately.
+                const newUsername = document.getElementById('inp-username').value;
+                let finalSvg = document.getElementById('inp-avatar').value;
+
+                // Attempt to redraw avatar with new name if possible
+                if (window.CodeHero && window.CodeHero.UI && window.CodeHero.UI.drawAvatar && finalSvg.includes('<!--config:')) {
+                    try {
+                        const parts = finalSvg.split('<!--config:');
+                        const configStr = parts[1].split('-->')[0];
+                        const config = JSON.parse(configStr);
+                        console.log("Regenerating Avatar for:", newUsername);
+
+                        // Redraw
+                        const svgBase = window.CodeHero.UI.drawAvatar(config, newUsername);
+                        // Re-embed config
+                        finalSvg = `${svgBase}<!--config:${configStr}-->`;
+                    } catch (e) {
+                        console.warn("Failed to regenerate avatar", e);
+                    }
+                }
+
                 payload = {
                     role: document.getElementById('inp-role').value,
-                    username: document.getElementById('inp-username').value,
-                    avatar_svg: document.getElementById('inp-avatar').value
+                    username: newUsername,
+                    avatar_svg: finalSvg
                 };
             }
         }

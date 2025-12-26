@@ -31,10 +31,10 @@
             return false;
         };
         // Minimal Global Setup for Seeding
-        window.CodeHero = { Data: {} };
+        window.CodeHero = { Data: {}, UI: {} };
     </script>
-    <!-- Legacy scripts not needed for admin except maybe config if shared? AdminApp handles it self mostly -->
-    <!-- <script src="js/data/levels.js"></script> -->
+    <!-- Avatar Logic for redrawing names -->
+    <script src="/js/ui/AvatarEditor.js"></script>
     <script type="module" src="js/admin/AdminApp.js"></script>
 </head>
 
