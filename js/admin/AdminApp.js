@@ -946,12 +946,23 @@ class AdminApp {
 
         if (this.currentEditType === 'level') {
             payload.description = document.getElementById('inp-desc').value;
-            payload.hint = document.getElementById('inp-hint').value;
-            payload.type = document.getElementById('inp-type').value;
-            payload.perfect_score = parseInt(document.getElementById('inp-score').value) || 10;
-            payload.stars_2_threshold = parseInt(document.getElementById('inp-star2').value) || 15;
             payload.stars_1_threshold = parseInt(document.getElementById('inp-star1').value) || 20;
             payload.phase_id = document.getElementById('inp-phase').value || null; // Use phase_id
+
+            // New Fields
+            payload.hint = document.getElementById('inp-hint').value;
+            const startCodeRaw = document.getElementById('inp-start-code').value;
+            if (startCodeRaw.trim()) {
+                try {
+                    payload.start_code = JSON.parse(startCodeRaw);
+                } catch (e) {
+                    alert("⚠️ Error en JSON de Código Inicial: " + e.message);
+                    return;
+                }
+            } else {
+                payload.start_code = [];
+            }
+
             payload.map = this.currentMap;
             payload.start_pos = this.levelMeta.start;
             payload.end_pos = this.levelMeta.end;

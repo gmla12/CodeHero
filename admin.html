@@ -68,13 +68,22 @@
                 <!-- Views injected here -->
                 <div id="view-dashboard" class="view active">
                     <div class="stats-grid">
-                        <div class="card stat">
-                            <h3>Usuarios</h3>
-                            <p class="number" id="stat-users">-</p>
+                        <div class="form-group">
+                            <label>Puntuación Perfecta (Bloques)</label>
+                            <input type="number" id="inp-score" value="10">
                         </div>
-                        <div class="card stat">
-                            <h3>Niveles</h3>
-                            <p class="number" id="stat-levels">-</p>
+                        <div class="form-group">
+                            <label>Pista (Opcional)</label>
+                            <input type="text" id="inp-hint" placeholder="Pista para el usuario...">
+                        </div>
+                        <div class="form-group" style="grid-column: span 2;">
+                            <label>Código Inicial (JSON - Para Debugging)</label>
+                            <textarea id="inp-start-code" rows="3" placeholder='[{"type":"loop",...}]'
+                                style="width:100%; background:#333; color:#0f0; font-family:monospace;"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>⭐ 2 Estrellas (Max Bloques)</label>
+                            <input type="number" id="inp-star2" value="15">
                         </div>
                         <div class="card stat">
                             <h3>Mundos</h3>
