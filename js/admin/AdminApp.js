@@ -26,7 +26,7 @@ class AdminApp {
                 const loginOverlay = document.getElementById('admin-login');
                 if (loginOverlay) {
                     loginOverlay.classList.remove('active');
-                    loginOverlay.style.display = 'none';
+                    loginOverlay.style.setProperty('display', 'none', 'important');
                 }
 
                 // SHOW APP CONTAINER
