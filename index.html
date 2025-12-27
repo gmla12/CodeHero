@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>CodeHero: Aprende Lógica</title>
     <link rel="icon" type="image/png" href="img/icon.png">
+    <link rel="manifest" href="/manifest.json" crossorigin="use-credentials">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/game.css">
     <link rel="stylesheet" href="css/style.css?v=17">
@@ -383,22 +384,25 @@
         <div class="scroll-area" id="leaderboard-list"></div>
     </div>
 
-    <!-- Core & Config -->
-    <script type="module" src="js/services/supabase.js"></script>
+    <!-- CORE SERVICES -->
+    <script type="module">
+        window.ENV = window.ENV || {};
+        try {
+            window.ENV.VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+            window.ENV.VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+            window.ENV.NEXT_PUBLIC_SUPABASE_URL = import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
+            window.ENV.NEXT_PUBLIC_SUPABASE_ANON_KEY = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+            if (window.initSupabase) window.initSupabase();
+        } catch (e) {
+            // Env injection failed silently
+        }
+    </script>
+    <script type="module" src="/js/services/supabase.js"></script>
     <script src="/js/config.js"></script>
     <script src="/js/utils/helpers.js"></script>
     <script src="/js/utils/Draggable.js"></script>
     <script src="/js/core/GameState.js"></script>
-
-    <!-- Data -->
-    <!-- Data (Legacy files moved to Supabase) -->
-    <!-- <script src="js/data/levels.js"></script> -->
-    <!-- <script src="js/data/worlds.js"></script> -->
-
-    <!-- Core Logic -->
-    <script src="/js/core/LoopSystem.js"></script>
-
-    <!-- UI -->
     <!-- UI -->
     <script src="/js/ui/AvatarEditor.js"></script>
     <script src="/js/ui/UIRenderer.js"></script>
@@ -419,7 +423,13 @@
     <script>
         // Init Pull To Refresh Global
         window.addEventListener('load', () => {
-            if (window.PullToRefresh) new PullToRefresh();
+            if (CodeHero && CodeHero.Utils && CodeHero.Utils.PullToRefresh) {
+                CodeHero.Utils.PullToRefresh.init();
+            }
+            // Register Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js').catch(err => console.error('SW Failed:', err));
+            }
         });
     </script>
 </body>

@@ -2,7 +2,6 @@
 CodeHero.Main = {};
 
 CodeHero.Main.init = async function () {
-    console.log("🚀 CodeHero Initialized");
     document.body.classList.add('loading'); // Security: Hide everything
 
     // Init Managers

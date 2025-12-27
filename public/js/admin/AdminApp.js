@@ -26,7 +26,7 @@ class AdminApp {
                 const loginOverlay = document.getElementById('admin-login');
                 if (loginOverlay) {
                     loginOverlay.classList.remove('active');
-                    loginOverlay.style.display = 'none';
+                    loginOverlay.style.setProperty('display', 'none', 'important');
                 }
 
                 // SHOW APP CONTAINER
@@ -86,7 +86,9 @@ class AdminApp {
             });
 
             if (error) {
+                console.error("Login Fail:", error);
                 err.innerText = error.message;
+                alert("Error de Acceso: " + error.message); // Mobile feedback
                 btn.innerText = "Entrar"; btn.disabled = false;
             } else {
                 window.location.reload();

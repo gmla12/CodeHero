@@ -9,8 +9,8 @@ export default defineConfig({
         outDir: 'dist',
         rollupOptions: {
             input: {
-                main: './index.html',
-                admin: './admin.html' // Future admin route
+                main: 'index.html',
+                admin: 'admin.html'
             }
         }
     }
