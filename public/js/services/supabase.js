@@ -15,6 +15,9 @@ window.initSupabase = function () {
 
     try {
         window.supabase = createClient(supabaseUrl, supabaseKey);
+        // Expose to CodeHero namespace
+        window.CodeHero = window.CodeHero || {};
+        window.CodeHero.Supabase = window.supabase;
         console.log("Supabase Client Initialized ✅");
     } catch (e) {
         console.error("Supabase Init Error:", e);
@@ -23,8 +26,3 @@ window.initSupabase = function () {
 
 // Auto-try on load
 window.initSupabase();
-
-// Expose to global scope for legacy code support
-window.CodeHero = window.CodeHero || {};
-window.CodeHero.Supabase = supabase;
-window.supabase = supabase; // Legacy Fallback
