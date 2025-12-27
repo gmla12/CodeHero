@@ -86,7 +86,9 @@ class AdminApp {
             });
 
             if (error) {
+                console.error("Login Fail:", error);
                 err.innerText = error.message;
+                alert("Error de Acceso: " + error.message); // Mobile feedback
                 btn.innerText = "Entrar"; btn.disabled = false;
             } else {
                 window.location.reload();
