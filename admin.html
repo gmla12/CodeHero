@@ -20,11 +20,17 @@
 
         /* JS will toggle this off if session exists, via inline style */
     </style>
-    <link rel="stylesheet" href="css/style.css?v=dev_fix_27">
-    <link rel="stylesheet" href="css/components.css?v=dev_fix_27">
-    <link rel="stylesheet" href="css/admin.css?v=dev_fix_27">
-    <link rel="icon" type="image/png" href="img/favicon.png">
-    <script type="module" src="js/services/supabase.js"></script>
+    <link rel="stylesheet" href="/css/style.css?v=dev_fix_27">
+    <link rel="stylesheet" href="/css/components.css?v=dev_fix_27">
+    <link rel="stylesheet" href="/css/admin.css?v=dev_fix_27">
+    <link rel="icon" type="image/png" href="/img/favicon.png">
+
+    <!-- Environment Config (Vite Bundle) -->
+    <script type="module" src="/env.js"></script>
+
+    <!-- Core Services (Static) -->
+    <script type="module" src="/js/services/supabase.js"></script>
+
     <script>
         // GLOBAL ERROR HANDLER
         window.onerror = function (msg, url, lineNo, columnNo, error) {
@@ -35,18 +41,18 @@
         window.CodeHero = { Data: {}, UI: {} };
     </script>
     <!-- Dependencies -->
-    <script src="js/ui/AvatarEditor.js"></script>
-    <script src="js/utils/PullToRefresh.js"></script>
+    <script src="/js/ui/AvatarEditor.js"></script>
+    <script src="/js/utils/PullToRefresh.js"></script>
 
     <!-- Admin Modules (Order Matters) -->
     <!-- Admin Modules (Order Matters) -->
     <!-- 1. Core Class Definition -->
-    <script src="js/admin/AdminApp.js?v=dev_fix_27"></script>
+    <script src="/js/admin/AdminApp.js?v=dev_fix_27"></script>
     <!-- 2. Modules (Prototype Extensions) -->
-    <script src="js/admin/modules/AdminLists.js?v=dev_fix_27"></script>
-    <script src="js/admin/modules/AdminEditor.js?v=dev_fix_27"></script>
-    <script src="js/admin/modules/AdminSettings.js?v=dev_fix_27"></script>
-    <script src="js/admin/modules/AdminBots.js?v=dev_fix_27"></script>
+    <script src="/js/admin/modules/AdminLists.js?v=dev_fix_27"></script>
+    <script src="/js/admin/modules/AdminEditor.js?v=dev_fix_27"></script>
+    <script src="/js/admin/modules/AdminSettings.js?v=dev_fix_27"></script>
+    <script src="/js/admin/modules/AdminBots.js?v=dev_fix_27"></script>
 
     <script>
         window.addEventListener('load', () => {
