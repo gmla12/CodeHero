@@ -26,14 +26,18 @@
     <link rel="icon" type="image/png" href="/img/favicon.png">
 
     <!-- Environment Config (Inlined for reliability) -->
-    <script>
+    <script type="module">
         window.ENV = window.ENV || {};
         // Vite replaces these strings at build time
-        window.ENV.VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-        window.ENV.VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-        window.ENV.NEXT_PUBLIC_SUPABASE_URL = import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
-        window.ENV.NEXT_PUBLIC_SUPABASE_ANON_KEY = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-        console.log("Env Vars Injected (Admin)");
+        try {
+            window.ENV.VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+            window.ENV.VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+            window.ENV.NEXT_PUBLIC_SUPABASE_URL = import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
+            window.ENV.NEXT_PUBLIC_SUPABASE_ANON_KEY = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+            console.log("Env Vars Injected (Admin)");
+        } catch (e) {
+            console.warn("Env Injection failed:", e);
+        }
     </script>
 
     <!-- Core Services (Static) -->
