@@ -18,6 +18,13 @@ CodeHero.State.resetLevelState = function (level) {
     CodeHero.State.hasKey = false;
     CodeHero.State.isLooping = false;
     CodeHero.State.loopBuffer = [];
-    CodeHero.State.gameCommands = [];
     CodeHero.State.heroPos = { ...level.start, dir: 1 };
+
+    // NEW: Debugging Levels Support
+    if (level.start_code && Array.isArray(level.start_code) && level.start_code.length > 0) {
+        // Deep copy to ensure we don't mutate the source definition
+        CodeHero.State.gameCommands = JSON.parse(JSON.stringify(level.start_code));
+    } else {
+        CodeHero.State.gameCommands = [];
+    }
 };

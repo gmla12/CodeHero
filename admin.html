@@ -85,8 +85,14 @@
 
                 <!-- Levels View -->
                 <div id="view-levels" class="view">
-                    <div class="toolbar">
-                        <button class="btn-primary" id="btn-add-level">+ Nuevo Nivel</button>
+                    <div class="toolbar" style="gap: 10px;">
+                        <input type="text" id="filter-levels-search" placeholder="🔍 Buscar Nivel..."
+                            style="padding: 5px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
+                        <select id="filter-levels-world"
+                            style="padding: 5px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
+                            <option value="">Todos los Mundos</option>
+                        </select>
+                        <button class="btn-primary" id="btn-add-level" style="margin-left: auto;">+ Nuevo Nivel</button>
                     </div>
                     <div class="table-container">
                         <table class="data-table">
@@ -106,8 +112,10 @@
 
                 <!-- Worlds View -->
                 <div id="view-worlds" class="view">
-                    <div class="toolbar">
-                        <button class="btn-primary" id="btn-add-world">+ Nuevo Mundo</button>
+                    <div class="toolbar" style="gap: 10px;">
+                        <input type="text" id="filter-worlds-search" placeholder="🔍 Buscar Mundo..."
+                            style="padding: 5px; border-radius: 4px; border: 1px solid #444; background: #222; color: white;">
+                        <button class="btn-primary" id="btn-add-world" style="margin-left: auto;">+ Nuevo Mundo</button>
                     </div>
                     <div class="table-container">
                         <table class="data-table">
@@ -132,6 +140,10 @@
 
                 <!-- Users View -->
                 <div id="view-users" class="view">
+                    <div class="toolbar" style="margin-bottom: 10px;">
+                        <input type="text" id="filter-users-search" placeholder="🔍 Buscar Usuario (Email)..."
+                            style="padding: 5px; border-radius: 4px; border: 1px solid #444; background: #222; color: white; width: 300px;">
+                    </div>
                     <div class="table-container">
                         <table class="data-table">
                             <thead>

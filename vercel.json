@@ -1,5 +1,16 @@
 {
     "framework": "vite",
     "buildCommand": "pnpm run build",
-    "outputDirectory": "dist"
+    "outputDirectory": "dist",
+    "cleanUrls": true,
+    "rewrites": [
+        {
+            "source": "/admin",
+            "destination": "/admin.html"
+        },
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
 }

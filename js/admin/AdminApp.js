@@ -3,6 +3,17 @@ import { createClient } from '@supabase/supabase-js';
 
 class AdminApp {
     constructor() {
+        this.currentEditType = null;
+        this.currentEditId = null;
+        this.currentContext = null;
+        this.filtersBound = false;
+
+        // Initialize Arrays to avoid undefined errors
+        this.users = [];
+        this.levels = [];
+        this.worlds = [];
+        this.phases = [];
+
         this.init();
     }
 
@@ -23,9 +34,15 @@ class AdminApp {
 
                 if (profile?.role === 'admin') {
                     // Hide Login explicitly (overriding CSS failsafe)
-                    document.getElementById('admin-login').style.setProperty('display', 'none', 'important');
-                    document.getElementById('admin-app').style.setProperty('display', 'flex', 'important'); // Unlock UI
-                    this.showDashboard(session.user);
+                    const login = document.getElementById('admin-login');
+                    if (login) login.style.setProperty('display', 'none', 'important');
+
+                    const app = document.getElementById('admin-app');
+                    if (app) app.style.setProperty('display', 'flex', 'important'); // Unlock UI
+                    if (app) app.style.filter = 'none';
+
+                    // Show Dashboard and load data
+                    await this.showDashboard(session.user);
                 } else {
                     alert('Acceso Denegado. No eres Admin.');
                     await supabase.auth.signOut();
@@ -138,7 +155,13 @@ class AdminApp {
 
     currentContext = null; // Store context like worldId
 
-    switchView(viewName, editId = null, context = null) { // editId param added
+    updateActiveNav(viewId) {
+        document.querySelectorAll('.nav-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.view === viewId);
+        });
+    }
+
+    async switchView(viewName, editId = null, context = null) { // editId param added
         this.currentContext = context;
         // Hide ALL views
         document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -148,8 +171,8 @@ class AdminApp {
             const type = viewName.split('-')[1]; // level, phase, world
             this.renderEditor(type, editId);
             document.getElementById('view-editor').classList.add('active');
-            document.getElementById('page-title').textContent = editId ? `Editar ${type}` : `Crear ${type}`;
-            document.getElementById('page-actions').innerHTML = `<button class="btn-secondary" id="btn-back">⬅️ Volver</button>`;
+            document.getElementById('page-title').textContent = editId ? `Editar ${type} ` : `Crear ${type} `;
+            document.getElementById('page-actions').innerHTML = `< button class="btn-secondary" id = "btn-back" >⬅️ Volver</button > `;
 
             // Smart Back Navigation
             if (this.currentContext && this.currentContext.worldId && type === 'phase') {
@@ -173,13 +196,16 @@ class AdminApp {
         }
 
         // Standard Views
-        const target = document.getElementById(`view-${viewName}`);
+        const viewId = 'view-' + viewName;
+        const target = document.getElementById(viewId);
         if (target) target.classList.add('active');
+
+        this.updateActiveNav(viewName.replace(/s$/, '')); // nav highlights base name (e.g., 'levels' -> 'level')
 
         const titleEl = document.getElementById('page-title');
         if (titleEl) {
             let title = viewName.charAt(0).toUpperCase() + viewName.slice(1);
-            if (viewName === 'phases') title = 'Mundos'; // Correction
+            if (viewName === 'phases') title = 'Mundos'; // Correction, though phases view is removed
             if (viewName === 'worlds') title = 'Mundos';
             titleEl.textContent = title;
         }
@@ -194,6 +220,8 @@ class AdminApp {
         // Re-bind Seed Listener if dashboard
         if (viewName === 'dashboard') document.getElementById('btn-seed-db')?.addEventListener('click', this.seedDatabase.bind(this));
 
+        await this.loadData(); // Load data for all views
+
         if (viewName === 'levels') this.renderLevels();
         else if (viewName === 'phases') {
             // Redirect phases to worlds as well, or just show worlds
@@ -204,83 +232,101 @@ class AdminApp {
         else if (viewName === 'users') this.renderUsers();
     }
 
-    async renderLevels() {
-        // Fetch levels with phase info
-        const { data: levels } = await supabase.from('levels').select('*, phases(title, world_id)').order('id');
+    async loadData() {
+        const { data: users } = await supabase.from('profiles').select('*');
+        const { data: levels } = await supabase.from('levels').select('*').order('id');
+        const { data: worlds } = await supabase.from('worlds').select('*').order('id');
+        const { data: phases } = await supabase.from('phases').select('*').order('order_index');
+
+        this.users = users || [];
+        this.levels = levels || [];
+        this.worlds = worlds || [];
+        this.phases = phases || [];
+
+        // Populate World Filter in Levels View if not already done
+        const wFilter = document.getElementById('filter-levels-world');
+        if (wFilter && wFilter.options.length <= 1) { // Keep "Todos"
+            this.worlds.forEach(w => {
+                const opt = document.createElement('option');
+                opt.value = w.id;
+                opt.textContent = w.title;
+                wFilter.appendChild(opt);
+            });
+        }
+
+        // Bind Filter Events (Once)
+        if (!this.filtersBound) {
+            document.getElementById('filter-levels-search')?.addEventListener('input', () => this.renderLevels());
+            document.getElementById('filter-levels-world')?.addEventListener('change', () => this.renderLevels());
+            document.getElementById('filter-worlds-search')?.addEventListener('input', () => this.renderWorlds());
+            document.getElementById('filter-users-search')?.addEventListener('input', () => this.renderUsers());
+            this.filtersBound = true;
+        }
+
+        this.updateStats(); // Assuming updateStats exists elsewhere or will be added
+    }
+
+    // --- Renders ---
+
+    renderLevels() {
         const list = document.getElementById('list-levels');
         if (!list) return;
         list.innerHTML = '';
-        levels?.forEach(l => {
+
+        // Filtering
+        const search = document.getElementById('filter-levels-search')?.value.toLowerCase() || '';
+        const wId = document.getElementById('filter-levels-world')?.value;
+
+        const filtered = this.levels.filter(l => {
+            const matchesSearch = l.title.toLowerCase().includes(search) || l.id.toString().includes(search);
+
+            // For world filter, we need to find the world via the phase
+            // level -> phase_id -> phase -> world_id
+            let matchesWorld = true;
+            if (wId) {
+                const phase = this.phases.find(p => p.id === l.phase_id);
+                matchesWorld = phase && phase.world_id == wId;
+            }
+            return matchesSearch && matchesWorld;
+        });
+
+        filtered.forEach(l => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${l.id}</td>
-                <td>${l.title}</td>
-                <td>${l.type}</td>
-                <td>${l.phases?.title || '-'}</td>
-                <td>
-                    <button class="btn-sm btn-edit" data-type="level" data-id="${l.id}">✏️</button>
-                    <button class="btn-sm btn-del" data-type="level" data-id="${l.id}">🗑️</button>
-                </td>
-            `;
+            // Resolve World Name
+            let worldName = '-';
+            const phase = this.phases.find(p => p.id === l.phase_id);
+            if (phase) {
+                const world = this.worlds.find(w => w.id === phase.world_id);
+                if (world) worldName = world.title;
+            }
+
+            tr.innerHTML = `<td><small>${l.id}</small></td><td>${l.title}</td><td>${l.type || '-'}</td><td><small>${worldName}</small></td><td>
+                <button class="btn-sm btn-edit" data-type="level" data-id="${l.id}" title="Editar">✏️</button>
+                <button class="btn-sm btn-del" data-type="level" data-id="${l.id}" title="Eliminar">🗑️</button>
+            </td>`;
             list.appendChild(tr);
         });
         this.bindListActions(list);
     }
 
-    async renderWorlds() {
-        // Fetch Worlds
-        const { data: worlds } = await supabase.from('worlds').select('*').order('id');
+    renderWorlds() {
+        const list = document.getElementById('list-worlds');
+        if (!list) return;
+        list.innerHTML = '';
 
-        const container = document.getElementById('view-container');
+        const search = document.getElementById('filter-worlds-search')?.value.toLowerCase() || '';
+        const data = this.worlds || []; // Safety
+        const filtered = data.filter(w => (w.title || '').toLowerCase().includes(search));
 
-        // Re-use or Create view-worlds
-        let view = document.getElementById('view-worlds');
-        if (!view) {
-            view = document.createElement('div');
-            view.id = 'view-worlds';
-            view.className = 'view';
-            container.appendChild(view);
-        }
-
-        view.innerHTML = `
-            <div>
-               <div class="toolbar" style="justify-content:space-between; display:flex; margin-bottom:10px">
-                    <h3>🌍 Lista de Mundos</h3>
-                    <button class="btn-primary" id="btn-add-world">+ Nuevo Mundo</button>
-                </div>
-                <div class="table-container">
-                    <table class="data-table">
-                        <thead><tr><th>ID</th><th>Título</th><th>Descripción</th><th>Acciones</th></tr></thead>
-                        <tbody id="list-worlds-final"></tbody>
-                    </table>
-                </div>
-                <p style="margin-top:20px; color:var(--text-muted); font-size:0.9rem">
-                    💡 <strong>Nota:</strong> Para ver o editar las Fases, haz clic en "Editar" (✏️) en el Mundo correspondiente.
-                </p>
-            </div>
-        `;
-
-        // Bind Add Button
-        view.querySelector('#btn-add-world').addEventListener('click', () => this.switchView('edit-world'));
-
-        // Render List
-        const list = document.getElementById('list-worlds-final');
-        worlds?.forEach(w => {
+        filtered.forEach(w => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${w.id}</td>
-                <td><strong style="color:var(--primary)">${w.title}</strong></td>
-                <td><small style="color:var(--text-muted)">${w.description || '-'}</small></td>
-                <td>
-                    <button class="btn-sm btn-edit" data-type="world" data-id="${w.id}" title="Editar (Ver Fases)">✏️</button>
-                    <button class="btn-sm btn-del" data-type="world" data-id="${w.id}" title="Eliminar">🗑️</button>
-                </td>`;
+            tr.innerHTML = `<td><small>${w.id}</small></td><td>${w.title}</td><td>${w.description}</td><td>
+                 <button class="btn-sm btn-edit" data-type="world" data-id="${w.id}" title="Editar">✏️</button>
+                 <button class="btn-sm btn-del" data-type="world" data-id="${w.id}" title="Eliminar">🗑️</button>
+            </td>`;
             list.appendChild(tr);
         });
-
-        // Ensure visibility
-        view.classList.add('active');
-        this.bindListActions(view);
+        this.bindListActions(list);
     }
 
     // Removing renderPhases as user requested simplification
@@ -311,10 +357,21 @@ class AdminApp {
             }
         }
 
-        data?.forEach(u => {
+        const search = document.getElementById('filter-users-search')?.value.toLowerCase() || '';
+
+        const filtered = this.users.filter(u => {
+            const displayName = (u.username || u.full_name || u.email || '').toLowerCase();
+            const role = (u.role || '').toLowerCase();
+            return displayName.includes(search) || u.id.includes(search) || role.includes(search);
+        });
+
+        filtered.forEach(u => {
             const tr = document.createElement('tr');
             const displayName = u.username || u.full_name || u.email;
-            tr.innerHTML = `<td><small>${u.id}</small></td><td>${displayName}</td><td>${u.role}</td><td>
+            // Highlight Admin Role
+            const roleBadge = u.role === 'admin' ? '<span style="color:var(--gold)">admin</span>' : u.role;
+
+            tr.innerHTML = `<td><small>${u.id}</small></td><td>${displayName}</td><td>${roleBadge}</td><td>
                 <button class="btn-sm btn-edit" data-type="user" data-id="${u.id}" title="Editar">✏️</button>
                 <button class="btn-sm btn-del" data-type="user" data-id="${u.id}" title="Eliminar">🗑️</button>
             </td>`;
@@ -413,15 +470,15 @@ class AdminApp {
                 modal.className = 'modal-overlay'; // Re-use existing overlay class
                 modal.style.display = 'none';
                 modal.innerHTML = `
-                    <div class="modal-wrapper" style="max-width:400px; text-align:center">
+    < div class="modal-wrapper" style = "max-width:400px; text-align:center" >
                         <h3 style="margin-bottom:20px; color:var(--text-color)">⚠️ Confirmación</h3>
                         <p id="confirm-msg" style="margin-bottom:30px; color:var(--text-muted)"></p>
                         <div style="display:flex; justify-content:center; gap:15px">
                             <button class="btn-secondary" id="btn-confirm-no">Cancelar</button>
                             <button class="btn-primary" id="btn-confirm-yes" style="background:var(--danger, #ff4444)">Eliminar</button>
                         </div>
-                    </div>
-                `;
+                    </div >
+    `;
                 document.body.appendChild(modal);
             }
 
@@ -503,12 +560,12 @@ class AdminApp {
             };
 
             container.innerHTML = `
-                <div class="tabs">
+    < div class="tabs" >
                     <button class="tab-btn active" data-tab="gen">General</button>
                     <button class="tab-btn" data-tab="map">Mapa & Diseño</button>
                     <button class="tab-btn" data-tab="log">Lógica & Scoring</button>
                     <button class="btn-primary" id="btn-save-editor" style="margin-left:auto">💾 Guardar Cambios</button>
-                </div>
+                </div >
 
                 <div id="tab-gen" class="tab-content active">
                     <div class="form-grid">
@@ -532,27 +589,52 @@ class AdminApp {
                 </div>
 
                 <div id="tab-map" class="tab-content">
-                    <div style="margin-bottom:10px; display:flex; gap:10px; align-items:center; background:#222; padding:10px; border-radius:8px">
-                        <label style="margin:0; color:#fff">Ancho: <input type="number" id="inp-width" value="${data.map[0].length}" style="width:60px"></label>
-                        <label style="margin:0; color:#fff">Alto: <input type="number" id="inp-height" value="${data.map.length}" style="width:60px"></label>
-                        <button class="btn-sm btn-secondary" id="btn-resize-map">Aplicar Tamaño</button>
-                    </div>
+                    <div style="display:grid; grid-template-columns: 2fr 1fr; gap:20px; height:600px">
+                        
+                        <!-- LEFT: MAP EDITOR -->
+                        <div style="border-right:1px solid #444; padding-right:10px; display:flex; flex-direction:column">
+                            <h3 style="margin-top:0">🗺️ Diseño del Mapa</h3>
+                            <div style="margin-bottom:10px; display:flex; gap:10px; align-items:center; background:#222; padding:5px 10px; border-radius:8px">
+                                <label style="margin:0; color:#fff; font-size:0.8rem">W: <input type="number" id="inp-width" value="${data.map[0].length}" style="width:50px"></label>
+                                <label style="margin:0; color:#fff; font-size:0.8rem">H: <input type="number" id="inp-height" value="${data.map.length}" style="width:50px"></label>
+                                <button class="btn-sm btn-secondary" id="btn-resize-map">Resize</button>
+                            </div>
 
-                    <div class="editor-toolbar">
-                        <button class="btn-tool active" data-tool="wall">🧱 Pared</button>
-                        <button class="btn-tool" data-tool="eraser">⬜ Borrar</button>
-                        <div style="width:1px; background:#444; margin:0 5px"></div>
-                        <button class="btn-tool" data-tool="start">🚩 Inicio</button>
-                        <button class="btn-tool" data-tool="end">🏁 Meta</button>
-                        <div style="width:1px; background:#444; margin:0 5px"></div>
-                        <button class="btn-tool" data-tool="key">🔑 Llave</button>
-                        <button class="btn-tool" data-tool="door">🚪 Puerta</button>
-                        <button class="btn-tool" data-tool="portal">🌀 Portal</button>
+                            <div class="editor-toolbar">
+                                <button class="btn-tool active" data-tool="wall">🧱</button>
+                                <button class="btn-tool" data-tool="eraser">⬜</button>
+                                <div style="width:1px; background:#444; margin:0 5px"></div>
+                                <button class="btn-tool" data-tool="start">🚩</button>
+                                <button class="btn-tool" data-tool="end">🏁</button>
+                                <div style="width:1px; background:#444; margin:0 5px"></div>
+                                <button class="btn-tool" data-tool="key">🔑</button>
+                                <button class="btn-tool" data-tool="door">🚪</button>
+                                <button class="btn-tool" data-tool="portal">🌀</button>
+                            </div>
+                            <div style="overflow:auto; flex:1; border:1px solid #444; padding:20px; background:#111">
+                                <div id="grid-editor" class="grid-editor" style="grid-template-columns: repeat(${data.map[0].length}, 32px);"></div>
+                            </div>
+                             <p style="font-size:0.7rem; color:#666; text-align:center">Click para colocar. Click en Items para alternar.</p>
+                        </div>
+
+                        <!-- RIGHT: START CODE BUILDER -->
+                        <div style="display:flex; flex-direction:column; overflow:hidden">
+                            <h3 style="margin-top:0">🧩 Código Inicial (Debugging)</h3>
+                            <div style="flex:1; overflow-y:auto; background:#1a1a1a; border:1px solid #444; padding:10px; margin-bottom:10px" id="code-builder-list">
+                                <!-- Command Items will be injected here -->
+                                <p style="color:#666; text-align:center; margin-top:50px">No hay comandos iniciales</p>
+                            </div>
+                            
+                            <!-- Add Buttons -->
+                            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:5px">
+                                <button class="btn-sm btn-primary" id="btn-add-move">⬆️ Avanzar</button>
+                                <button class="btn-sm btn-primary" id="btn-add-turn">🔄 Girar</button>
+                                <button class="btn-sm btn-primary" id="btn-add-loop">🔴 Bucle</button>
+                                <button class="btn-sm btn-primary" id="btn-add-lock">🔓 Abrir</button>
+                            </div>
+                             <button class="btn-sm btn-danger" id="btn-clear-code" style="margin-top:5px">🗑️ Limpiar Todo</button>
+                        </div>
                     </div>
-                    <div style="overflow:auto; max-height:600px; border:1px solid #444; padding:20px; background:#111">
-                        <div id="grid-editor" class="grid-editor" style="grid-template-columns: repeat(${data.map[0].length}, 32px);"></div>
-                    </div>
-                    <p style="font-size:0.8rem; color:#666; margin-top:10px; text-align:center">Click para colocar. Click en Llave/Puerta/Portal las alterna.</p>
                 </div>
 
                 <div id="tab-log" class="tab-content">
@@ -566,7 +648,10 @@ class AdminApp {
                         </div>
                     </div>
                 </div>
-            `;
+`;
+
+            // --- INIT STATE ---
+            this.startCode = data.start_code || []; // Initialize State
 
             if (data.type) document.getElementById('inp-type').value = data.type;
 
@@ -588,6 +673,10 @@ class AdminApp {
             // Tool Listeners
             this.bindToolLogic(container);
 
+            // Code Builder Listeners
+            this.bindCodeBuilderLogic();
+            this.renderCodeBuilder(); // Initial Render
+
             // Load Phases
             this.initLevelEditor(data); // Initialize Cascading Dropdowns
 
@@ -595,29 +684,29 @@ class AdminApp {
 
         } else if (type === 'phase') {
             container.innerHTML = `
-                <div class="form-grid">
+    < div class="form-grid" >
                     <label>Título <input id="inp-title" value="${data.title || ''}"></label>
                     <label>Mundo 
                         <select id="inp-world"><option>Cargando...</option></select>
                     </label>
                     <div style="grid-column: span 2"><label>Descripción <textarea id="inp-desc">${data.description || ''}</textarea></label></div>
-                </div>
-                <div style="margin-top:20px; text-align:right">
-                    <button class="btn-primary" id="btn-save-editor">💾 Guardar Cambios</button>
-                </div>
-            `;
+                </div >
+    <div style="margin-top:20px; text-align:right">
+        <button class="btn-primary" id="btn-save-editor">💾 Guardar Cambios</button>
+    </div>
+`;
             this.loadWorldsForSelect(data.world_id || (this.currentContext ? this.currentContext.worldId : null));
             document.getElementById('btn-save-editor').addEventListener('click', this.saveModal.bind(this));
 
         } else if (type === 'world') {
             container.innerHTML = `
-                <div style="display:flex; flex-direction:column; gap:10px">
+    < div style = "display:flex; flex-direction:column; gap:10px" >
                     <h3>Datos Generales</h3>
                     <label>Título <input type="text" id="inp-title" value="${data.title || ''}"></label>
                     <label>Descripción <textarea id="inp-desc">${data.description || ''}</textarea></label>
-                </div>
+                </div >
 
-                <!-- Nested Phases List -->
+                < !--Nested Phases List-- >
                 <div style="margin-top:40px; border-top:1px solid #333; padding-top:20px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                          <h3>Fases del Mundo</h3>
@@ -632,7 +721,7 @@ class AdminApp {
                 <div style="margin-top:20px; text-align:right">
                     <button class="btn-primary" id="btn-save-editor">💾 Guardar Cambios</button>
                 </div>
-            `;
+`;
             document.getElementById('btn-save-editor').addEventListener('click', this.saveModal.bind(this));
 
             // Nested Logic
@@ -642,7 +731,7 @@ class AdminApp {
                 phases?.forEach(p => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-                        <td>${p.id}</td>
+    < td > ${p.id}</td >
                         <td>${p.title}</td>
                         <td>
                             <button class="btn-sm btn-edit-nested" data-id="${p.id}" title="Editar">✏️</button>
@@ -673,7 +762,7 @@ class AdminApp {
         } else if (type === 'user') {
             const isNew = !data.id;
             container.innerHTML = `
-                <div class="form-grid">
+    < div class="form-grid" >
                     <label>Email (Auth) 
                         <div style="display:flex; gap:5px">
                             <input type="text" id="inp-email" value="${data.email || ''}" ${isNew ? '' : 'disabled style="opacity:0.6"'}>
@@ -708,11 +797,11 @@ class AdminApp {
                         <!-- Hidden Input for Logic -->
                         <textarea id="inp-avatar" style="display:none">${data.avatar_svg || ''}</textarea>
                     </div>
-                </div>
-                <div style="margin-top:20px; text-align:right">
-                    <button class="btn-primary" id="btn-save-editor">💾 ${isNew ? 'Crear Usuario' : 'Guardar Usuario'}</button>
-                </div>
-            `;
+                </div >
+    <div style="margin-top:20px; text-align:right">
+        <button class="btn-primary" id="btn-save-editor">💾 ${isNew ? 'Crear Usuario' : 'Guardar Usuario'}</button>
+    </div>
+`;
 
             document.getElementById('btn-save-editor').addEventListener('click', this.saveModal.bind(this));
 
@@ -747,7 +836,7 @@ class AdminApp {
                 container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 container.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 e.target.classList.add('active');
-                document.getElementById(`tab-${e.target.dataset.tab}`).classList.add('active');
+                document.getElementById(`tab - ${e.target.dataset.tab} `).classList.add('active');
             });
         });
     }
@@ -796,9 +885,119 @@ class AdminApp {
             // Safety check: ensure title doesn't look like a phase if data is mixed (unlikely with strict tables)
             const opt = document.createElement('option');
             opt.value = w.id;
-            opt.textContent = `[ID: ${w.id}] ${w.title}`;
+            opt.textContent = `[ID: ${w.id}] ${w.title} `;
             if (selectedId && w.id.toString() === selectedId.toString()) opt.selected = true;
             select.appendChild(opt);
+        });
+    }
+
+    // --- CODE BUILDER LOGIC ---
+
+    bindCodeBuilderLogic() {
+        document.getElementById('btn-add-move').onclick = () => { this.startCode.push("moveForward"); this.renderCodeBuilder(); };
+        document.getElementById('btn-add-turn').onclick = () => { this.startCode.push("turnLeft"); this.renderCodeBuilder(); }; // Default turn left
+        document.getElementById('btn-add-lock').onclick = () => { this.startCode.push("unlock"); this.renderCodeBuilder(); };
+        document.getElementById('btn-clear-code').onclick = () => { if (confirm('¿Borrar todo?')) { this.startCode = []; this.renderCodeBuilder(); } };
+
+        document.getElementById('btn-add-loop').onclick = () => {
+            const count = prompt("¿Repeticiones del bucle?", "3");
+            if (count) {
+                this.startCode.push({ type: "loop", count: parseInt(count), cmds: [] });
+                this.renderCodeBuilder();
+            }
+        };
+    }
+
+    renderCodeBuilder() {
+        const container = document.getElementById('code-builder-list');
+        if (!container) return;
+        container.innerHTML = '';
+
+        if (this.startCode.length === 0) {
+            container.innerHTML = '<p style="color:#666; text-align:center; margin-top:50px">No hay comandos iniciales</p>';
+            return;
+        }
+
+        const createItem = (cmd, index, parentArray) => {
+            const div = document.createElement('div');
+            div.style.cssText = "background:#333; margin-bottom:4px; padding:5px; border-radius:4px; font-family:monospace; font-size:0.9rem; display:flex; align-items:center; gap:5px";
+
+            // Icon & Text
+            let text = cmd;
+            let icon = '🟦';
+
+            if (typeof cmd === 'string') {
+                if (cmd === 'moveForward') { text = 'Adelante'; icon = '⬆️'; }
+                if (cmd === 'turnLeft') { text = 'Girar Izq'; icon = '↺'; }
+                if (cmd === 'turnRight') { text = 'Girar Der'; icon = '↻'; }
+                if (cmd === 'unlock') { text = 'Abrir'; icon = '🔓'; }
+
+                div.innerHTML = `< span style = "flex:1" > ${icon} ${text}</span > `;
+
+                // Toggle Turn
+                if (cmd.includes('turn')) {
+                    const toggleBtn = document.createElement('button');
+                    toggleBtn.innerHTML = '⇄';
+                    toggleBtn.className = 'btn-xs btn-secondary';
+                    toggleBtn.onclick = () => { parentArray[index] = (cmd === 'turnLeft' ? 'turnRight' : 'turnLeft'); this.renderCodeBuilder(); };
+                    div.appendChild(toggleBtn);
+                }
+
+            } else if (cmd.type === 'loop') {
+                div.style.background = '#422'; // Red tint
+                div.style.flexDirection = 'column';
+                div.style.alignItems = 'stretch';
+
+                // Header
+                div.innerHTML = `
+    < div style = "display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #633; padding-bottom:5px" >
+                        <span>🔴 Bucle (${cmd.count}x)</span>
+                        <div style="display:flex; gap:5px">
+                            <button class="btn-xs btn-add-inner" style="background:#555">+</button>
+                            <button class="btn-xs btn-del-loop" style="background:#844">X</button>
+                        </div>
+                    </div >
+    <div class="loop-body" style="padding-left:10px; border-left:2px solid #633"></div>
+`;
+
+                const body = div.querySelector('.loop-body');
+                cmd.cmds.forEach((subCmd, subIdx) => {
+                    body.appendChild(createItem(subCmd, subIdx, cmd.cmds));
+                });
+
+                // Events
+                div.querySelector('.btn-add-inner').onclick = () => {
+                    // Simple logic: Add Move Forward by default to loop, user can't select type easily inside loop yet without complex UI
+                    // Let's prompt or simple add
+                    const reply = prompt("1: Avanzar, 2: Girar", "1");
+                    if (reply === '1') cmd.cmds.push("moveForward");
+                    else if (reply === '2') cmd.cmds.push("turnLeft");
+                    this.renderCodeBuilder();
+                };
+                div.querySelector('.btn-del-loop').onclick = () => {
+                    parentArray.splice(index, 1);
+                    this.renderCodeBuilder();
+                };
+
+                return div; // Return early as we handled children
+            }
+
+            // Delete Button
+            const delBtn = document.createElement('button');
+            delBtn.textContent = 'x';
+            delBtn.className = 'btn-xs btn-danger';
+            delBtn.style.marginLeft = 'auto';
+            delBtn.onclick = () => {
+                parentArray.splice(index, 1);
+                this.renderCodeBuilder();
+            };
+            div.appendChild(delBtn);
+
+            return div;
+        };
+
+        this.startCode.forEach((cmd, idx) => {
+            container.appendChild(createItem(cmd, idx, this.startCode));
         });
     }
 
@@ -939,172 +1138,159 @@ class AdminApp {
     }
 
     async saveModal() {
-        const title = document.getElementById('inp-title')?.value;
-        let payload = { title };
-        let table = this.currentEditType + 's';
-        if (this.currentEditType === 'user') table = 'profiles'; // Fix: Map to correct table
+        const type = this.currentEditType;
+        const id = this.currentEditId;
 
-        if (this.currentEditType === 'level') {
-            payload.description = document.getElementById('inp-desc').value;
-            payload.hint = document.getElementById('inp-hint').value;
-            payload.type = document.getElementById('inp-type').value;
-            payload.perfect_score = parseInt(document.getElementById('inp-score').value) || 10;
-            payload.stars_2_threshold = parseInt(document.getElementById('inp-star2').value) || 15;
-            payload.stars_1_threshold = parseInt(document.getElementById('inp-star1').value) || 20;
-            payload.phase_id = document.getElementById('inp-phase').value || null; // Use phase_id
-            payload.map = this.currentMap;
-            payload.start_pos = this.levelMeta.start;
-            payload.end_pos = this.levelMeta.end;
+        // --- 1. USER CREATION (Special flow via Auth API) ---
+        if (type === 'user' && !id) {
+            const email = document.getElementById('inp-email').value;
+            const password = document.getElementById('inp-password').value;
+            const username = document.getElementById('inp-username').value;
+            const role = document.getElementById('inp-role').value;
 
-            // Basic Validation
-            if (payload.start_pos.x === -1 || payload.end_pos.x === -1) {
-                alert("Debes colocar un Inicio (🚩) y una Meta (🏁).");
+            if (!email || !password || !username) {
+                alert('Email, Contraseña y Usuario son requeridos.');
                 return;
             }
 
-        } else if (this.currentEditType === 'world') {
-            payload.description = document.getElementById('inp-desc').value;
-        } else if (this.currentEditType === 'phase') {
-            payload.world_id = document.getElementById('inp-world').value;
-        } else if (this.currentEditType === 'user') {
-            // New Logic for Users
-            if (!this.currentEditId) {
-                // CREATE USER (Via RPC)
-                const email = document.getElementById('inp-email').value;
-                const password = document.getElementById('inp-password').value;
-                const username = document.getElementById('inp-username').value;
-                const role = document.getElementById('inp-role').value;
+            // Env Check
+            const sUrl = (import.meta.env && import.meta.env.VITE_SUPABASE_URL);
+            const sKey = (import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY);
+            if (!sUrl) {
+                this.showError("Missing VITE_SUPABASE_URL.");
+                return;
+            }
 
-                if (!email || !password || !username) {
-                    alert('Email, Contraseña y Usuario son requeridos.');
-                    return;
-                }
+            // Temp Client for SignUp
+            const tempClient = createClient(sUrl, sKey);
 
-                // Create Temp Client to avoid logging out Admin
-                // We use the anon key. Since we are creating a user, public signup (or at least anon access) is required, 
-                // but we can check the error.
-                // However, the User Manager says "public signup disabled" might block this if we use the PUBLIC anon client?
-                // NO, 'allow_signup' is our own app setting check, Supabase Auth itself usually allows specific signups unless "Disable Signup" is ON in Supabase Dashboard.
-                // If "Disable Signup" is ON in Supabase, we CANNOT create users this way without Service Key.
-                // But the user said "checking email is disabled", implying they can config Supabase.
-                // Let's assume standard signUp works.
-
-                // Safe Env Check
-                const sUrl = (import.meta.env && import.meta.env.VITE_SUPABASE_URL);
-                const sKey = (import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY);
-
-                if (!sUrl) {
-                    this.showError("Missing VITE_SUPABASE_URL. Check Vercel Envs.");
-                    return;
-                }
-
-                const tempSupa = createClient(sUrl, sKey, {
-                    auth: {
-                        persistSession: false, // Critical: user in memory only
-                        autoRefreshToken: false,
-                        detectSessionInUrl: false
-                    }
-                });
-
-                const { data: authData, error: authError } = await tempSupa.auth.signUp({
+            try {
+                const { data: authData, error: authError } = await tempClient.auth.signUp({
                     email,
                     password,
-                    options: {
-                        data: {
-                            username: username,
-                            role: role
-                        }
-                    }
+                    options: { data: { username: username } }
                 });
 
-                if (authError) {
-                    alert("⛔ Error Auth API: " + authError.message);
-                    return;
-                }
-
-                if (!authData.user) {
-                    alert("⚠️ No se recibió usuario. ¿Confirmación de email requerida?");
-                    return;
-                }
+                if (authError) throw authError;
+                if (!authData.user) throw new Error("No se recibió usuario.");
 
                 const newId = authData.user.id;
-                console.log("Usuario creado:", newId);
 
-                // SUCCESS: Manually Ensure Profile uses the correct ROLE
-                // (Triggers might set it to 'user' by default, we want to force what Admin selected)
+                // Create Profile
                 const { error: profileErr } = await supabase.from('profiles').upsert({
                     id: newId,
                     username: username,
-                    role: role, // Force selected role
+                    role: role,
                     email: email
                 });
 
-                if (profileErr) {
-                    console.error("Profile Upsert Error", profileErr);
-                    alert("Usuario Auth creado, pero error en Perfil: " + profileErr.message);
-                } else {
-                    alert("✅ Usuario creado con éxito.\nID: " + newId);
-                    this.switchView('users');
-                    return;
-                }
+                if (profileErr) throw profileErr;
 
-            } else {
-                // UPDATE USER (Profile only)
-                const newUsername = document.getElementById('inp-username').value;
-                let finalSvg = document.getElementById('inp-avatar').value;
+                alert("✅ Usuario creado con éxito.\nID: " + newId);
+                this.switchView('users');
+                return;
 
-                // Attempt to redraw avatar with new name if possible
-                if (window.CodeHero && window.CodeHero.UI && window.CodeHero.UI.drawAvatar && finalSvg.includes('<!--config:')) {
-                    try {
-                        const parts = finalSvg.split('<!--config:');
-                        const configStr = parts[1].split('-->')[0];
-                        const config = JSON.parse(configStr);
-                        console.log("Regenerating Avatar for:", newUsername);
-
-                        // Redraw
-                        const svgBase = window.CodeHero.UI.drawAvatar(config, newUsername);
-                        // Re-embed config
-                        finalSvg = `${svgBase}<!--config:${configStr}-->`;
-                    } catch (e) {
-                        console.warn("Failed to regenerate avatar", e);
-                    }
-                }
-
-                payload = {
-                    role: document.getElementById('inp-role').value,
-                    username: newUsername,
-                    avatar_svg: finalSvg
-                };
+            } catch (e) {
+                console.error(e);
+                alert("Error creando usuario: " + e.message);
+                return;
             }
         }
 
-        let error;
+        // --- 2. STANDARD SAVE (Update User, or Save Level/World) ---
+        let table = '';
+        let payload = {};
 
-        if (this.currentEditId) {
-            const { error: err } = await supabase.from(table).update(payload).eq('id', this.currentEditId);
+        if (type === 'user') {
+            table = 'profiles';
+            const newUsername = document.getElementById('inp-username').value;
+
+            // Uniqueness Check (Update only)
+            const { data: existing } = await supabase
+                .from('profiles')
+                .select('id')
+                .eq('username', newUsername)
+                .neq('id', id)
+                .single();
+
+            if (existing) {
+                alert("⛔ El nombre de usuario ya existe. Elige otro.");
+                return;
+            }
+
+            let finalSvg = document.getElementById('inp-avatar').value;
+            // Avatar Regen Logic
+            if (window.CodeHero && window.CodeHero.UI && window.CodeHero.UI.drawAvatar && finalSvg.includes('<!--config:')) {
+                try {
+                    const parts = finalSvg.split('<!--config:');
+                    const configStr = parts[1].split('-->')[0];
+                    const config = JSON.parse(configStr);
+                    const svgBase = window.CodeHero.UI.drawAvatar(config, newUsername);
+                    finalSvg = `${svgBase}< !--config:${configStr} --> `;
+                } catch (e) { console.warn(e); }
+            }
+
+            payload = {
+                role: document.getElementById('inp-role').value,
+                username: newUsername,
+                avatar_svg: finalSvg
+            };
+        } else if (type === 'level') {
+            table = 'levels';
+            try {
+                payload = {
+                    title: document.getElementById('inp-title').value,
+                    type: document.getElementById('inp-type').value,
+                    description: document.getElementById('inp-desc').value,
+                    phase_id: parseInt(document.getElementById('inp-phase').value),
+                    perfect_score: parseInt(document.getElementById('inp-perfect').value),
+                    map: JSON.parse(document.getElementById('inp-map').value),
+                    start_pos: JSON.parse(document.getElementById('inp-start').value),
+                    end_pos: JSON.parse(document.getElementById('inp-end').value),
+                    hint: document.getElementById('inp-hint').value,
+                    start_code: this.startCode || []
+                };
+            } catch (e) {
+                alert("Error JSON en Nivel: " + e.message);
+                return;
+            }
+        } else if (type === 'world') {
+            table = 'worlds';
+            payload = {
+                title: document.getElementById('inp-title').value,
+                description: document.getElementById('inp-desc').value
+            };
+        } else if (type === 'phase') {
+            table = 'phases';
+            payload = {
+                title: document.getElementById('inp-title').value,
+                description: document.getElementById('inp-desc').value,
+                order_index: parseInt(document.getElementById('inp-order').value) || 0,
+                world_id: this.currentContext?.worldId
+            };
+        }
+
+        // DB Upsert
+        let error;
+        if (id) {
+            const { error: err } = await supabase.from(table).update(payload).eq('id', id);
             error = err;
         } else {
-            // Standard Insert for Logic/Levels
-            if (this.currentEditType !== 'user') {
-                const { error: err } = await supabase.from(table).insert(payload);
-                error = err;
-            }
+            const { error: err } = await supabase.from(table).insert(payload);
+            error = err;
         }
 
         if (error) alert("Error: " + error.message);
         else {
-            // Success
             alert("Guardado!");
-            alert("Guardado!");
-
-            // Check context for redirection
-            if (this.currentEditType === 'phase' && this.currentContext && this.currentContext.worldId) {
+            if (type === 'phase' && this.currentContext?.worldId) {
                 this.switchView('edit-world', this.currentContext.worldId);
             } else {
-                this.switchView(this.currentEditType + 's'); // Default back to list
+                this.switchView(type + 's');
             }
         }
     }
+
 
     // --- Auth ---
 
@@ -1129,7 +1315,14 @@ class AdminApp {
         if (app) app.style.filter = 'blur(5px)';
     }
 
-    showDashboard(user) {
+    async showDashboard(user) {
+        // Init Views
+        this.renderWorlds(); // Just creates the container structure
+
+        // Ensure data is loaded properly before showing stats
+        await this.loadData();
+
+        // Hide Login
         const login = document.getElementById('admin-login');
         const app = document.getElementById('admin-app');
         if (login) login.style.setProperty('display', 'none', 'important');
@@ -1138,20 +1331,16 @@ class AdminApp {
         const nameEl = document.getElementById('admin-name');
         if (nameEl) nameEl.textContent = user.email;
 
-        this.loadStats();
+        this.updateStats();
     }
 
-    async loadStats() {
-        const { count: userCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
-        const { count: levelCount } = await supabase.from('levels').select('*', { count: 'exact', head: true });
-        const { count: worldCount } = await supabase.from('worlds').select('*', { count: 'exact', head: true });
-
+    updateStats() {
         const uEl = document.getElementById('stat-users');
         const lEl = document.getElementById('stat-levels');
         const wEl = document.getElementById('stat-worlds');
-        if (uEl) uEl.textContent = userCount || 0;
-        if (lEl) lEl.textContent = levelCount || 0;
-        if (wEl) wEl.textContent = worldCount || 0;
+        if (uEl) uEl.textContent = this.users?.length || 0;
+        if (lEl) lEl.textContent = this.levels?.length || 0;
+        if (wEl) wEl.textContent = this.worlds?.length || 0;
     }
     async renderSettings() {
         const container = document.getElementById('view-editor-content'); // Reuse editor container or view-settings
@@ -1160,7 +1349,7 @@ class AdminApp {
         const settingsView = document.getElementById('view-settings');
         if (!settingsView) return;
         settingsView.innerHTML = `
-            <div class="card" style="width:95%; max-width:800px; margin: 40px auto; padding:20px; box-sizing:border-box">
+    < div class="card" style = "width:95%; max-width:800px; margin: 40px auto; padding:20px; box-sizing:border-box" >
                 <h2 style="margin-bottom:30px; color:var(--primary); text-align:center">⚙️ Configuración del Sistema</h2>
                 
                 <div class="form-group" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; background:rgba(255,255,255,0.05); padding:20px; border-radius:12px; border:1px solid rgba(255,255,255,0.1)">
@@ -1194,7 +1383,7 @@ class AdminApp {
                     <p id="settings-msg" style="margin-top:15px; min-height:20px; font-weight:bold"></p>
                 </div>
             </div >
-            `;
+    `;
 
         // Load Current State
         const { data: config } = await supabase.from('app_settings').select('allow_signup').eq('id', 'config').single();
@@ -1258,7 +1447,7 @@ class AdminApp {
                 msg.style.color = 'var(--success)';
                 msg.textContent = "¡Contenido restaurado exitosamente!";
                 // Refresh stats
-                this.loadStats();
+                this.updateStats();
             }
         };
     }
@@ -1284,7 +1473,7 @@ class AdminApp {
             if (actions) actions.parentNode.insertBefore(errorBox, actions);
         }
 
-        errorBox.innerHTML = `<span>${msg}</span>`;
+        errorBox.innerHTML = `< span > ${msg}</span > `;
         errorBox.style.display = 'block';
     }
 }
