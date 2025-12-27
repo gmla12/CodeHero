@@ -381,6 +381,19 @@ CodeHero.Managers.UserManager.saveUser = async function () {
     // 3. Save to Supabase
     const { data: { session } } = await CodeHero.Supabase.auth.getSession();
     if (session && session.user) {
+        // CHECK UNIQUENESS
+        const { data: existing } = await CodeHero.Supabase
+            .from('profiles')
+            .select('id')
+            .eq('username', name)
+            .neq('id', session.user.id)
+            .single();
+
+        if (existing) {
+            alert("⛔ Ese nombre ya está en uso. Por favor elige otro.");
+            return;
+        }
+
         const updates = {
             id: session.user.id,
             username: name,
