@@ -9,7 +9,7 @@
             "destination": "/admin.html"
         },
         {
-            "source": "/(.*)",
+            "source": "/((?!manifest.json|sw.js|js/|css/|img/).*)",
             "destination": "/index.html"
         }
     ]
