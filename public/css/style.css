@@ -44,7 +44,13 @@ body {
     background: var(--bg);
     color: var(--text);
     height: 100vh;
+    /* Fallback */
+    height: 100dvh;
+    /* Dynamic Viewport Height */
     overflow: hidden;
+    position: fixed;
+    /* Lock body to prevent elastic scroll */
+    width: 100%;
 }
 
 .screen {
@@ -406,6 +412,7 @@ body.loading .screen {
 body.loading .screen {
     display: none !important;
 }
+
 /* --- NEW DUOLINGO STYLE MAP --- */
 
 .game-path-container {
@@ -426,9 +433,9 @@ body.loading .screen {
     padding: 30px 20px;
     margin-bottom: 20px;
     border-radius: 20px;
-    background: linear-gradient(135deg, rgba(25,25,25,0.8), rgba(0,0,0,0.8));
-    border: 1px solid rgba(255,255,255,0.1);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    background: linear-gradient(135deg, rgba(25, 25, 25, 0.8), rgba(0, 0, 0, 0.8));
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
     position: relative;
     overflow: hidden;
 }
@@ -470,13 +477,24 @@ body.loading .screen {
     display: flex;
     justify-content: center;
     position: relative;
-    height: 100px; /* Space for node */
+    height: 100px;
+    /* Space for node */
 }
 
 /* ZigZag Logic */
-.path-center { justify-content: center; }
-.path-left { justify-content: flex-start; padding-left: 20%; }
-.path-right { justify-content: flex-end; padding-right: 20%; }
+.path-center {
+    justify-content: center;
+}
+
+.path-left {
+    justify-content: flex-start;
+    padding-left: 20%;
+}
+
+.path-right {
+    justify-content: flex-end;
+    padding-right: 20%;
+}
 
 .level-node {
     width: 80px;
@@ -492,7 +510,7 @@ body.loading .screen {
     position: relative;
     transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     z-index: 2;
-    box-shadow: 0 10px 20px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.5);
 }
 
 /* Connectors (Pseudo-elements could be hard with ZigZag, keeping simple for now) */
@@ -528,8 +546,14 @@ body.loading .screen {
 }
 
 /* Specific Types Colors */
-.level-node.type-boss { border-color: #ef4444; }
-.level-node.type-boss.current { background: linear-gradient(135deg, #ef4444, #b91c1c); box-shadow: 0 0 40px rgba(239, 68, 68, 0.8); }
+.level-node.type-boss {
+    border-color: #ef4444;
+}
+
+.level-node.type-boss.current {
+    background: linear-gradient(135deg, #ef4444, #b91c1c);
+    box-shadow: 0 0 40px rgba(239, 68, 68, 0.8);
+}
 
 /* Stars */
 .node-stars {
@@ -537,18 +561,27 @@ body.loading .screen {
     bottom: -15px;
     display: flex;
     gap: 2px;
-    background: rgba(0,0,0,0.8);
+    background: rgba(0, 0, 0, 0.8);
     padding: 2px 8px;
     border-radius: 10px;
     border: 1px solid #444;
 }
-.node-stars span { font-size: 0.8rem; color: #444; }
-.node-stars span.on { color: var(--gold); text-shadow: 0 0 5px var(--gold); }
+
+.node-stars span {
+    font-size: 0.8rem;
+    color: #444;
+}
+
+.node-stars span.on {
+    color: var(--gold);
+    text-shadow: 0 0 5px var(--gold);
+}
 
 /* POPOVER INFO */
 .node-popover {
     position: absolute;
-    top: -120%; /* Above */
+    top: -120%;
+    /* Above */
     left: 50%;
     transform: translateX(-50%) scale(0.8);
     background: #1e293b;
@@ -556,7 +589,7 @@ body.loading .screen {
     padding: 15px;
     border-radius: 12px;
     border: 1px solid var(--primary);
-    box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     opacity: 0;
     pointer-events: none;
     transition: all 0.2s ease;
@@ -609,7 +642,13 @@ body.loading .screen {
 }
 
 @keyframes bounce {
-    0%, 100% { transform: scale(1.1) translateY(0); }
-    50% { transform: scale(1.1) translateY(-10px); }
-}
 
+    0%,
+    100% {
+        transform: scale(1.1) translateY(0);
+    }
+
+    50% {
+        transform: scale(1.1) translateY(-10px);
+    }
+}

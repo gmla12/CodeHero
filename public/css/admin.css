@@ -25,6 +25,8 @@ body {
     font-family: 'Inter', system-ui, sans-serif !important;
     margin: 0;
     overflow: hidden;
+    height: 100dvh;
+    /* Dynamic Height */
 }
 
 /* Utilities */
