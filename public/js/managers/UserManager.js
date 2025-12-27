@@ -19,9 +19,18 @@ CodeHero.Managers.UserManager.initUserUI = async function () {
 
         // 2. Check Session
         const { data: { session } } = await supabase.auth.getSession();
+
         if (session) {
+            console.log("✅ Session Found:", session.user.email);
             CodeHero.Managers.UserManager.loadUserProfile(session.user);
+        } else {
+            console.warn("🔒 No session. Redirecting to Login.");
+            CodeHero.UI.UIRenderer.nav('login');
         }
+    } else {
+        console.error("Supabase client not initialized");
+        // Fallback or Error Screen?
+        CodeHero.UI.UIRenderer.nav('login');
     }
 };
 
@@ -414,40 +423,59 @@ CodeHero.Managers.UserManager.saveUser = async function () {
     CodeHero.UI.UIRenderer.nav('dash');
 };
 
-CodeHero.Managers.UserManager.showLeaderboard = function () {
+CodeHero.Managers.UserManager.showLeaderboard = async function () {
     const list = document.getElementById('leaderboard-list');
     if (!list) return;
-    list.innerHTML = '';
+    list.innerHTML = '<div style="padding:20px;text-align:center;">Cargando Ranking... 📡</div>';
+    CodeHero.UI.UIRenderer.nav('leaderboard');
 
-    // Mix current user with DB users (bots/others)
-    let allUsers = [];
-    if (CodeHero.State.db && CodeHero.State.db.users) {
-        allUsers = [...CodeHero.State.db.users];
+    // Fetch from Secure RPC (View)
+    const { data: globalUsers, error } = await CodeHero.Supabase.rpc('get_leaderboard');
+
+    if (error) {
+        list.innerHTML = `<div style="padding:20px;text-align:center;color:var(--danger)">Error: ${error.message}</div>`;
+        return;
     }
 
-    // Remove if duplicates (by ID or name)
-    allUsers = allUsers.filter(u => u.id !== CodeHero.State.currentUser.id && u.name !== CodeHero.State.currentUser.name);
+    list.innerHTML = '';
 
-    // Add Current User
-    allUsers.push(CodeHero.State.currentUser);
+    // Check if Current User is in top 50, if not, maybe we should fetch them separately?
+    // For now, Standard Leaderboard logic.
 
-    const sortedUsers = allUsers.sort((a, b) => b.score - a.score);
-
-    sortedUsers.forEach((u, idx) => {
+    globalUsers.forEach((u, idx) => {
         const d = document.createElement('div');
         let rankClass = '';
-        let rankIcon = `#${idx + 1}`;
+        let rankIcon = `#${u.rank}`;
+
+        // Highlight Current User
+        if (CodeHero.State.currentUser && u.username === CodeHero.State.currentUser.name) {
+            d.style.borderColor = 'var(--primary)';
+            d.style.boxShadow = '0 0 15px rgba(0, 210, 255, 0.3)';
+        }
+
         if (idx === 0) { rankClass = 'top-1'; rankIcon = '🥇'; }
         if (idx === 1) { rankClass = 'top-2'; rankIcon = '🥈'; }
         if (idx === 2) { rankClass = 'top-3'; rankIcon = '🥉'; }
 
+        // Parse Avatar if SVG string
+        let avatarConfig = u.avatar_svg;
+        if (typeof u.avatar_svg === 'string' && u.avatar_svg.includes('<!--config:')) {
+            try {
+                avatarConfig = JSON.parse(u.avatar_svg.split('<!--config:')[1].split('-->')[0]);
+            } catch (e) { }
+        }
+        // If avatar_svg is empty or just string, handle in drawAvatar logic? 
+        // drawAvatar expects Config Object OR falling back to seed?
+        // Let's pass the config object if parsed, else force drawAvatar to handle it.
+        // Actually drawAvatar takes (config, seed).
+
         d.className = `card leaderboard-item ${rankClass}`;
         d.innerHTML = `
             <div style="font-size:1.5rem; font-weight:bold; width:40px; text-align:center">${rankIcon}</div>
-            <div style="width:50px;height:50px;border-radius:50%;overflow:hidden;background:#333;border:2px solid rgba(255,255,255,0.2)">${CodeHero.UI.drawAvatar(u.avatar, u.name)}</div>
+            <div style="width:50px;height:50px;border-radius:50%;overflow:hidden;background:#333;border:2px solid rgba(255,255,255,0.2)">${CodeHero.UI.drawAvatar(avatarConfig, u.username)}</div>
             <div style="flex:1">
-                <div style="font-weight:bold; font-size:1.1rem; color:${u.isBot ? 'var(--secondary)' : 'white'}">${u.name} ${u.isBot ? '🤖' : ''}</div>
-                <div style="font-size:0.8rem; color:var(--text-muted)">Nivel ${u.maxLevel}</div>
+                <div style="font-weight:bold; font-size:1.1rem; color:${u.is_bot ? 'var(--secondary)' : 'white'}">${u.username} ${u.is_bot ? '🤖' : ''}</div>
+                <div style="font-size:0.8rem; color:var(--text-muted)">Rango Global</div>
             </div>
             <div style="text-align:right">
                 <div style="color:var(--primary); font-weight:bold; font-size:1.2rem">${u.score}</div>
@@ -456,17 +484,34 @@ CodeHero.Managers.UserManager.showLeaderboard = function () {
         `;
         list.appendChild(d);
     });
-    CodeHero.UI.UIRenderer.nav('leaderboard');
 };
 
 CodeHero.Managers.UserManager.unlockAllLevels = function () {
     const LEVELS = CodeHero.Data.LEVELS;
     CodeHero.State.currentUser.maxLevel = LEVELS.length - 1;
     LEVELS.forEach(l => { if (!CodeHero.State.currentUser.stars[l.id]) CodeHero.State.currentUser.stars[l.id] = 3; });
-    CodeHero.Managers.DataManager.saveData();
+
+    // Save
     CodeHero.Managers.DataManager.saveData();
     CodeHero.UI.UIRenderer.showModal("GOD MODE ⚡", "¡Todos los niveles desbloqueados! Disfruta.");
-    CodeHero.UI.DashboardRenderer.renderMap();
+    CodeHero.UI.DashboardRenderer.updateUserDisplay();
+};
+
+CodeHero.Managers.UserManager.resetAllLevels = function () {
+    if (!confirm("¿Seguro que quieres borrar TODO tu progreso? Esta acción es irreversible.")) return;
+
+    // 1. Reset State
+    CodeHero.State.currentUser.maxLevel = 0; // 0 ensures Start Level (Idx 0) is unlocked
+    CodeHero.State.currentUser.stars = {};
+    CodeHero.State.currentUser.score = 0;
+
+    // 2. Wipe Cloud Data
+    CodeHero.Managers.DataManager.resetCloudProgress(CodeHero.State.currentUser.id);
+
+    // 3. Wipe Local and Refresh
+    CodeHero.Managers.DataManager.saveData(); // Saves the empty state to local storage
+    CodeHero.UI.UIRenderer.showModal("RESET 🔒", "Progreso reiniciado a cero.");
+    CodeHero.UI.DashboardRenderer.updateUserDisplay();
 };
 
 CodeHero.Managers.UserManager.forceAppUpdate = function () {

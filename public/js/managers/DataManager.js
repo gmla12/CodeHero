@@ -18,6 +18,14 @@ CodeHero.Managers.DataManager.loadLevels = async function () {
     const supabase = CodeHero.Supabase;
     if (!supabase) return;
 
+    // 0. Fetch Level Types (New)
+    const { data: levelTypes } = await supabase.from('level_types').select('*');
+    if (levelTypes && levelTypes.length > 0) {
+        CodeHero.Data.LEVEL_TYPES = levelTypes;
+    } else {
+        CodeHero.Data.LEVEL_TYPES = []; // Fallback
+    }
+
     // 1. Fetch Worlds
     const { data: worlds } = await supabase.from('worlds').select('*').order('id');
     if (worlds && worlds.length > 0) {
@@ -119,6 +127,17 @@ CodeHero.Managers.DataManager.saveData = async function () {
         const { error } = await CodeHero.Supabase.from('progress').upsert(progressUpdates, { onConflict: 'user_id, level_id' });
         if (error) console.error('Cloud Save Error:', error);
         else console.log('Progress Saved to Cloud');
+    }
+};
+
+CodeHero.Managers.DataManager.resetCloudProgress = async function (uid) {
+    if (!CodeHero.Supabase) return;
+    const { error } = await CodeHero.Supabase.from('progress').delete().eq('user_id', uid);
+    if (error) {
+        console.error("Failed to reset cloud progress:", error);
+        alert("Error borrando progreso en la nube: " + error.message);
+    } else {
+        console.log("Cloud progress wiped for", uid);
     }
 };
 

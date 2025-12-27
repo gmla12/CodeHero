@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>CodeHero: Aprende Lógica</title>
+    <link rel="icon" type="image/png" href="img/icon.png">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/game.css">
     <link rel="stylesheet" href="css/style.css?v=17">
@@ -171,6 +172,9 @@
                 <div style="display:flex; gap:10px; justify-content:center">
                     <button id="btn-dev-unlock" class="btn-tool" style="background:#222; border-color:#444">🔓
                         Desbloquear Todo</button>
+                    <button id="btn-dev-reset" class="btn-tool"
+                        style="background:#222; border-color:#ff4757; color:#ff4757">🔒
+                        Resetear Todo</button>
                     <button id="btn-dev-update" class="btn-tool" style="background:#222; border-color:#444">🔄
                         Forzar Update</button>
                 </div>
@@ -395,11 +399,13 @@
     <script src="/js/core/LoopSystem.js"></script>
 
     <!-- UI -->
+    <!-- UI -->
     <script src="/js/ui/AvatarEditor.js"></script>
     <script src="/js/ui/UIRenderer.js"></script>
     <script src="/js/ui/GridRenderer.js"></script>
     <script src="/js/ui/Timeline.js"></script>
     <script src="/js/ui/DashboardRenderer.js"></script>
+    <script src="/js/utils/PullToRefresh.js"></script>
 
     <!-- Managers -->
     <script src="/js/managers/DataManager.js?v=18"></script>
@@ -410,6 +416,12 @@
 
     <!-- Main Entry -->
     <script src="/js/main.js"></script>
+    <script>
+        // Init Pull To Refresh Global
+        window.addEventListener('load', () => {
+            if (window.PullToRefresh) new PullToRefresh();
+        });
+    </script>
 </body>
 
 </html>
