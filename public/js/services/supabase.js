@@ -9,7 +9,7 @@ window.initSupabase = function () {
     const supabaseKey = env.VITE_SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
     if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('YOUR_SUPABASE_URL')) {
-        console.warn('Supabase: Config missing, waiting for injection...');
+        // Config missing, waiting for injection...
         return;
     }
 
@@ -18,7 +18,6 @@ window.initSupabase = function () {
         // Expose to CodeHero namespace
         window.CodeHero = window.CodeHero || {};
         window.CodeHero.Supabase = window.supabase;
-        console.log("Supabase Client Initialized ✅");
     } catch (e) {
         console.error("Supabase Init Error:", e);
     }

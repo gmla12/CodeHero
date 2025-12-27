@@ -30,17 +30,15 @@
     <script type="module">
         window.ENV = window.ENV || {};
         try {
-            console.log("Admin: Injecting Env...");
             window.ENV.VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
             window.ENV.VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
             window.ENV.NEXT_PUBLIC_SUPABASE_URL = import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
             window.ENV.NEXT_PUBLIC_SUPABASE_ANON_KEY = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-            console.log("Admin: Env Injected", window.ENV.VITE_SUPABASE_URL ? "OK" : "MISSING");
 
             // Force Init if script already loaded
             if (window.initSupabase) window.initSupabase();
         } catch (e) {
-            console.warn("Env Injection failed:", e);
+            // Env injection failed silently
         }
     </script>
 
