@@ -1,13 +1,13 @@
-const CACHE_NAME = 'codehero-v17-fix-login';
+const CACHE_NAME = 'codehero-v18-manifest-fix';
 const ASSETS = [
-    './',
-    './index.html',
-    './admin.html',
-    './css/style.css',
-    './css/components.css',
-    './css/admin.css',
-    './css/game.css',
-    './manifest.json',
+    '/',
+    '/index.html',
+    '/admin.html',
+    '/css/style.css',
+    '/css/components.css',
+    '/css/admin.css',
+    '/css/game.css',
+    '/manifest.json',
     './js/config.js',
     './js/utils/helpers.js',
     './js/core/GameState.js',

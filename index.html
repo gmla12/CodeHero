@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>CodeHero: Aprende Lógica</title>
     <link rel="icon" type="image/png" href="img/icon.png">
+    <link rel="manifest" href="/manifest.json">
     <link rel="stylesheet" href="css/components.css">
     <link rel="stylesheet" href="css/game.css">
     <link rel="stylesheet" href="css/style.css?v=17">
@@ -420,7 +421,15 @@
     <script>
         // Init Pull To Refresh Global
         window.addEventListener('load', () => {
-            if (window.PullToRefresh) new PullToRefresh();
+            if (CodeHero && CodeHero.Utils && CodeHero.Utils.PullToRefresh) {
+                CodeHero.Utils.PullToRefresh.init();
+            }
+            // Register Service Worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(reg => console.log('SW Registered!', reg.scope))
+                    .catch(err => console.error('SW Failed:', err));
+            }
         });
     </script>
 </body>
