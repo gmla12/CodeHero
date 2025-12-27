@@ -23,10 +23,10 @@ pnpm install
 1.  Crea un nuevo proyecto en [Supabase](https://supabase.com).
 2.  Ve al **SQL Editor** en tu dashboard de Supabase.
 3.  Abre el archivo `supabase/schema.sql` (ubicado en la carpeta `supabase` del proyecto).
-4.  Copia y pega todo el contenido en el Editor SQL y ejecútalo.
-    *   Esto creará todas las tablas (`profiles`, `levels`, `worlds`, etc.).
-    *   Configurará las políticas de seguridad (RLS).
-    *   Creará las funciones de administrador necesarias.
+4.  **Copia y pega todo el contenido** en el Editor SQL y ejecútalo.
+    *   Este "Master Script" (v2.0) creará todas las tablas (`level_types`, `profiles`, `levels`, etc.).
+    *   Configurará las políticas RLS de seguridad estricta.
+    *   Creará las funciones RPC para Bots, Leaderboard y Administración.
 
 ### 3. Variables de Entorno
 Crea un archivo `.env` en la raíz del proyecto (basado en `.env.example`):
@@ -55,12 +55,15 @@ pnpm run dev
 Accede a `/admin.html` para gestionar:
 *   **Usuarios**: Crear, Editar, Eliminar (con Auth integrado).
 *   **Mundos y Fases**: Organizar el contenido educativo.
-*   **Contenido Actual**:
-    *   **Mundo 1 (Cyberpunk)**: 13 Niveles (Algoritmos, Bucles, Condicionales).
-    *   **Mundo 2 (Matrix)**: 5 Niveles (Debugging y Refactorización) - *¡NUEVO!*
-*   **Niveles**: Editor visual de mapas (Drag & Drop) para crear puzzles.
-*   **Configuración**: Activar/Desactivar registros públicos.
+*   **Tipos de Nivel**: Gestionar categorías dinámicas (Tutorial, Boss, Bucles) con colores e iconos.
+*   **Bots & Leaderboard**: Gestionar bots simulados para la tabla de clasificación.
+*   **Niveles**: Editor visual de mapas (Drag & Drop).
 
-## ⚠️ Notas Importantes
-*   **Usuario Admin**: La creación de usuarios desde el Admin Panel usa la API de Supabase Client. Si los registros públicos están desactivados en Supabase, asegúrate de tener una sesión válida o usar la Service Key (si se implementa en backend).
-*   **Base de Datos**: El script `schema.sql` es idempotente (usa `if not exists`), pero ten cuidado al ejecutarlo en producción.
+## ⚠️ Resolución de Problemas Comunes
+
+### Usuario "Fantasma" (No aparece en lista)
+Si tu usuario existe en Authentication pero no en la tabla `profiles` (por error en triggers antiguos):
+1. Ejecuta el script de reparación disponible en `.gemini/antigravity/brain/.../repair_profiles.sql` (o crea un profile manualmente con el mismo ID).
+
+### Error 404 / 500 en Listas
+Asegúrate de haber ejecutado el `schema.sql` completo. Las políticas RLS antiguas pueden bloquear el acceso. El nuevo esquema incluye políticas `is_admin()` robustas.

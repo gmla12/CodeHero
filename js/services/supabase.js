@@ -17,7 +17,7 @@ if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('YOUR_SUPABASE_URL')) {
 
 export const supabase = createClient(supabaseUrl, supabaseKey);
 
-// Expose to global scope for legacy code support if needed, 
-// though we aim to import it.
+// Expose to global scope for legacy code support
 window.CodeHero = window.CodeHero || {};
 window.CodeHero.Supabase = supabase;
+window.supabase = supabase; // Legacy Fallback

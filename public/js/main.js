@@ -8,9 +8,7 @@ CodeHero.Main.init = async function () {
     // Init Managers
     CodeHero.Managers.DataManager.initData();
 
-    // Load Remote Data
-    await CodeHero.Managers.DataManager.loadLevels();
-
+    // Init User Logic (Will trigger data load if Session exists)
     CodeHero.Managers.UserManager.initUserUI();
 
     // Init Utilities
@@ -77,6 +75,7 @@ CodeHero.Main.bindEvents = function () {
 
     // --- Dev Tools ---
     bind('btn-dev-unlock', () => CodeHero.Managers.UserManager.unlockAllLevels());
+    bind('btn-dev-reset', () => CodeHero.Managers.UserManager.resetAllLevels());
     bind('btn-dev-update', () => CodeHero.Managers.UserManager.forceAppUpdate());
 };
 
