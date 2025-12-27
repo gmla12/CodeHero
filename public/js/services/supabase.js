@@ -1,22 +1,28 @@
+// Load from Global ENV (injected by env.js)
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-// Load from Runtime Config (env.js) or Fallback
-// Load from Runtime Config (env.js) or Fallback
-const env = window.ENV || {};
+window.initSupabase = function () {
+    if (window.supabase) return; // Already initialized
 
-// Safe access that allows Vite to replace the string "import.meta.env.VITE_..."
-// while preventing crashes in raw environments where import.meta.env is undefined.
-const viteEnv = import.meta.env || {};
-const supabaseUrl = env.VITE_SUPABASE_URL || viteEnv.VITE_SUPABASE_URL;
-const supabaseKey = env.VITE_SUPABASE_ANON_KEY || viteEnv.VITE_SUPABASE_ANON_KEY;
+    const env = window.ENV || {};
+    const supabaseUrl = env.VITE_SUPABASE_URL || env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = env.VITE_SUPABASE_ANON_KEY || env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('YOUR_SUPABASE_URL')) {
-    console.warn('Supabase credentials missing! Check .env file or Vercel Settings.');
-    alert("⚠️ Error: Configuración de Supabase faltante.");
-    throw new Error("Supabase Credentials Missing");
-}
+    if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('YOUR_SUPABASE_URL')) {
+        console.warn('Supabase: Config missing, waiting for injection...');
+        return;
+    }
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+    try {
+        window.supabase = createClient(supabaseUrl, supabaseKey);
+        console.log("Supabase Client Initialized ✅");
+    } catch (e) {
+        console.error("Supabase Init Error:", e);
+    }
+};
+
+// Auto-try on load
+window.initSupabase();
 
 // Expose to global scope for legacy code support
 window.CodeHero = window.CodeHero || {};
