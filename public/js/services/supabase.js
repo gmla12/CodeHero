@@ -11,12 +11,8 @@ const supabaseUrl = env.VITE_SUPABASE_URL || viteEnv.VITE_SUPABASE_URL;
 const supabaseKey = env.VITE_SUPABASE_ANON_KEY || viteEnv.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('YOUR_SUPABASE_URL')) {
-    console.error('Supabase Config Missing. Debug Info:', {
-        windowEnv: env,
-        viteEnvKeys: Object.keys(viteEnv)
-    });
     console.warn('Supabase credentials missing! Check .env file or Vercel Settings.');
-    alert("⚠️ Error: Configuración de Supabase faltante (Check Console).\n\nRevisa tus variables de entorno en Vercel.");
+    alert("⚠️ Error: Configuración de Supabase faltante.");
     throw new Error("Supabase Credentials Missing");
 }
 
