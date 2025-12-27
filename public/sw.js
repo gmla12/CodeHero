@@ -39,9 +39,10 @@ self.addEventListener('activate', (e) => {
                     return caches.delete(key);
                 }
             }));
+        }).then(() => {
+            return self.clients.claim(); // Moved inside waitUntil promise chain
         })
     );
-    return self.clients.claim(); // Take control immediately
 });
 
 self.addEventListener('fetch', (e) => {
