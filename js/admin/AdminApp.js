@@ -79,17 +79,13 @@ class AdminApp {
         // Create Buttons
         document.getElementById('btn-add-level')?.addEventListener('click', () => this.switchView('edit-level'));
         document.getElementById('btn-add-world')?.addEventListener('click', () => this.switchView('edit-world'));
+        document.getElementById('btn-add-type')?.addEventListener('click', () => this.switchView('edit-type'));
 
         // Modal Actions
         document.getElementById('btn-modal-cancel')?.addEventListener('click', this.closeModal.bind(this));
         document.getElementById('btn-modal-save')?.addEventListener('click', this.saveModal.bind(this));
 
-        // Grid Interactions (Delegated)
-        document.getElementById('modal-content')?.addEventListener('click', (e) => {
-            if (e.target.classList.contains('grid-cell')) {
-                this.toggleCell(e.target);
-            }
-        });
+
 
         // Seeding
         document.getElementById('btn-seed-db')?.addEventListener('click', this.seedDatabase.bind(this));
@@ -172,7 +168,7 @@ class AdminApp {
             this.renderEditor(type, editId);
             document.getElementById('view-editor').classList.add('active');
             document.getElementById('page-title').textContent = editId ? `Editar ${type} ` : `Crear ${type} `;
-            document.getElementById('page-actions').innerHTML = `< button class="btn-secondary" id = "btn-back" >⬅️ Volver</button > `;
+            document.getElementById('page-actions').innerHTML = `<button class="btn-secondary" id="btn-back">⬅️ Volver</button>`;
 
             // Smart Back Navigation
             if (this.currentContext && this.currentContext.worldId && type === 'phase') {
@@ -229,6 +225,7 @@ class AdminApp {
             return;
         }
         else if (viewName === 'worlds') this.renderWorlds();
+        else if (viewName === 'types') this.renderTypes();
         else if (viewName === 'users') this.renderUsers();
     }
 
@@ -237,11 +234,13 @@ class AdminApp {
         const { data: levels } = await supabase.from('levels').select('*').order('id');
         const { data: worlds } = await supabase.from('worlds').select('*').order('id');
         const { data: phases } = await supabase.from('phases').select('*').order('order_index');
+        const { data: types } = await supabase.from('level_types').select('*').order('id');
 
         this.users = users || [];
         this.levels = levels || [];
         this.worlds = worlds || [];
         this.phases = phases || [];
+        this.levelTypes = types || [];
 
         // Populate World Filter in Levels View if not already done
         const wFilter = document.getElementById('filter-levels-world');
@@ -259,6 +258,7 @@ class AdminApp {
             document.getElementById('filter-levels-search')?.addEventListener('input', () => this.renderLevels());
             document.getElementById('filter-levels-world')?.addEventListener('change', () => this.renderLevels());
             document.getElementById('filter-worlds-search')?.addEventListener('input', () => this.renderWorlds());
+            document.getElementById('filter-types-search')?.addEventListener('input', () => this.renderTypes());
             document.getElementById('filter-users-search')?.addEventListener('input', () => this.renderUsers());
             this.filtersBound = true;
         }
@@ -267,6 +267,29 @@ class AdminApp {
     }
 
     // --- Renders ---
+
+    renderTypes() {
+        const list = document.getElementById('list-types');
+        if (!list) return;
+        list.innerHTML = '';
+
+        const search = document.getElementById('filter-types-search')?.value.toLowerCase() || '';
+        const filtered = this.levelTypes.filter(t => t.name.toLowerCase().includes(search));
+
+        filtered.forEach(t => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td><small>${t.id}</small></td>
+                <td><span style="display:inline-block; width:12px; height:12px; background:${t.color || '#fff'}; border-radius:50%; margin-right:5px"></span>${t.name}</td>
+                <td><code>${t.color}</code></td>
+                <td>${t.slug || '-'}</td>
+                <td>
+                    <button class="btn-sm btn-edit" data-type="type" data-id="${t.id}" title="Editar">✏️</button>
+                    <button class="btn-sm btn-del" data-type="type" data-id="${t.id}" title="Eliminar">🗑️</button>
+                </td>`;
+            list.appendChild(tr);
+        });
+        this.bindListActions(list);
+    }
 
     renderLevels() {
         const list = document.getElementById('list-levels');
@@ -560,12 +583,12 @@ class AdminApp {
             };
 
             container.innerHTML = `
-    < div class="tabs" >
+                <div class="tabs">
                     <button class="tab-btn active" data-tab="gen">General</button>
                     <button class="tab-btn" data-tab="map">Mapa & Diseño</button>
                     <button class="tab-btn" data-tab="log">Lógica & Scoring</button>
                     <button class="btn-primary" id="btn-save-editor" style="margin-left:auto">💾 Guardar Cambios</button>
-                </div >
+                </div>
 
                 <div id="tab-gen" class="tab-content active">
                     <div class="form-grid">
@@ -577,12 +600,7 @@ class AdminApp {
                         <label>Fase <select id="inp-phase"><option>Selecciona Mundo primero...</option></select></label>
 
                         <label>Tipo <select id="inp-type">
-                            <option value="Tutorial">Tutorial</option>
-                            <option value="Básico">Básico</option>
-                            <option value="Giros">Giros</option>
-                            <option value="Bucles">Bucles</option>
-                            <option value="Condicionales">Condicionales</option>
-                            <option value="Boss">Boss</option>
+                            ${this.levelTypes.map(t => `<option value="${t.name}" ${data.type === t.name ? 'selected' : ''}>${t.name}</option>`).join('')}
                         </select></label>
                         <div style="grid-column: span 2"><label>Pista (Ayuda) <input type="text" id="inp-hint" value="${data.hint || ''}" placeholder="Ej: Usa un bucle para..."></label></div>
                     </div>
@@ -600,21 +618,25 @@ class AdminApp {
                                 <button class="btn-sm btn-secondary" id="btn-resize-map">Resize</button>
                             </div>
 
+                            <p style="font-size:0.85rem; color:#aaa; margin-bottom:10px; background:#222; padding:8px; border-radius:5px; border-left:3px solid var(--primary)">
+                                ℹ️ <b>Instrucciones:</b> Selecciona una herramienta abajo y haz click en la cuadrícula para editar.
+                            </p>
+
                             <div class="editor-toolbar">
-                                <button class="btn-tool active" data-tool="wall">🧱</button>
-                                <button class="btn-tool" data-tool="eraser">⬜</button>
+                                <button class="btn-tool active" data-tool="wall" title="Pared (Bloquea el paso)">🧱 Pared</button>
+                                <button class="btn-tool" data-tool="eraser" title="Borrador (Piso vacío)">⬜ Borrar</button>
                                 <div style="width:1px; background:#444; margin:0 5px"></div>
-                                <button class="btn-tool" data-tool="start">🚩</button>
-                                <button class="btn-tool" data-tool="end">🏁</button>
+                                <button class="btn-tool" data-tool="start" title="Inicio (Posición del Robot)">🚩 Inicio</button>
+                                <button class="btn-tool" data-tool="end" title="Meta (Bandera Final)">🏁 Meta</button>
                                 <div style="width:1px; background:#444; margin:0 5px"></div>
-                                <button class="btn-tool" data-tool="key">🔑</button>
-                                <button class="btn-tool" data-tool="door">🚪</button>
-                                <button class="btn-tool" data-tool="portal">🌀</button>
+                                <button class="btn-tool" data-tool="key" title="Llave (Necesaria para abrir puertas)">🔑 Llave</button>
+                                <button class="btn-tool" data-tool="door" title="Puerta (Requiere llave)">🚪 Puerta</button>
+                                <button class="btn-tool" data-tool="portal" title="Portal (Teletransporte)">🌀 Portal</button>
                             </div>
                             <div style="overflow:auto; flex:1; border:1px solid #444; padding:20px; background:#111">
                                 <div id="grid-editor" class="grid-editor" style="grid-template-columns: repeat(${data.map[0].length}, 32px);"></div>
                             </div>
-                             <p style="font-size:0.7rem; color:#666; text-align:center">Click para colocar. Click en Items para alternar.</p>
+                             <p style="font-size:0.7rem; color:#666; text-align:center; margin-top:5px">Click en Items repetidos para alternar estados.</p>
                         </div>
 
                         <!-- RIGHT: START CODE BUILDER -->
@@ -680,17 +702,28 @@ class AdminApp {
             // Load Phases
             this.initLevelEditor(data); // Initialize Cascading Dropdowns
 
+            // Bind Grid Click (Delegation on the new element)
+            const gridEl = document.getElementById('grid-editor');
+            if (gridEl) {
+                gridEl.addEventListener('click', (e) => {
+                    const cell = e.target.closest('.grid-cell');
+                    if (cell) this.toggleCell(cell);
+                });
+                // Prevent drag selection
+                gridEl.addEventListener('mousedown', e => e.preventDefault());
+            }
+
             this.renderGridEditor();
 
         } else if (type === 'phase') {
             container.innerHTML = `
-    < div class="form-grid" >
+    <div class="form-grid">
                     <label>Título <input id="inp-title" value="${data.title || ''}"></label>
                     <label>Mundo 
                         <select id="inp-world"><option>Cargando...</option></select>
                     </label>
                     <div style="grid-column: span 2"><label>Descripción <textarea id="inp-desc">${data.description || ''}</textarea></label></div>
-                </div >
+                </div>
     <div style="margin-top:20px; text-align:right">
         <button class="btn-primary" id="btn-save-editor">💾 Guardar Cambios</button>
     </div>
@@ -700,13 +733,13 @@ class AdminApp {
 
         } else if (type === 'world') {
             container.innerHTML = `
-    < div style = "display:flex; flex-direction:column; gap:10px" >
+    <div style="display:flex; flex-direction:column; gap:10px">
                     <h3>Datos Generales</h3>
                     <label>Título <input type="text" id="inp-title" value="${data.title || ''}"></label>
                     <label>Descripción <textarea id="inp-desc">${data.description || ''}</textarea></label>
-                </div >
+                </div>
 
-                < !--Nested Phases List-- >
+                <!--Nested Phases List-->
                 <div style="margin-top:40px; border-top:1px solid #333; padding-top:20px;">
                     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px;">
                          <h3>Fases del Mundo</h3>
@@ -731,7 +764,7 @@ class AdminApp {
                 phases?.forEach(p => {
                     const tr = document.createElement('tr');
                     tr.innerHTML = `
-    < td > ${p.id}</td >
+    <td> ${p.id}</td>
                         <td>${p.title}</td>
                         <td>
                             <button class="btn-sm btn-edit-nested" data-id="${p.id}" title="Editar">✏️</button>
@@ -762,7 +795,7 @@ class AdminApp {
         } else if (type === 'user') {
             const isNew = !data.id;
             container.innerHTML = `
-    < div class="form-grid" >
+    <div class="form-grid">
                     <label>Email (Auth) 
                         <div style="display:flex; gap:5px">
                             <input type="text" id="inp-email" value="${data.email || ''}" ${isNew ? '' : 'disabled style="opacity:0.6"'}>
@@ -797,11 +830,12 @@ class AdminApp {
                         <!-- Hidden Input for Logic -->
                         <textarea id="inp-avatar" style="display:none">${data.avatar_svg || ''}</textarea>
                     </div>
-                </div >
-    <div style="margin-top:20px; text-align:right">
-        <button class="btn-primary" id="btn-save-editor">💾 ${isNew ? 'Crear Usuario' : 'Guardar Usuario'}</button>
-    </div>
-`;
+                    </div>
+                </div>
+                <div style="margin-top:20px; text-align:right">
+                    <button class="btn-primary" id="btn-save-editor">💾 ${isNew ? 'Crear Usuario' : 'Guardar Usuario'}</button>
+                </div>
+            `;
 
             document.getElementById('btn-save-editor').addEventListener('click', this.saveModal.bind(this));
 
@@ -818,17 +852,38 @@ class AdminApp {
                 document.getElementById('btn-change-email')?.addEventListener('click', async () => {
                     const newEmail = prompt("Nuevo Email:", data.email);
                     if (newEmail && newEmail !== data.email) {
-                        const { error } = await supabase.rpc('update_user_email_admin', { target_user_id: data.id, new_email: newEmail });
-                        if (error) alert("Error (RPC): " + error.message + "\n\nAsegúrate de haber ejecutado el script SQL.");
+                        const { error } = await supabase.rpc('update_user_email_admin', {
+                            target_user_id: data.id,
+                            new_email: newEmail
+                        });
+                        if (error) alert("Error actualizando email: " + error.message);
                         else {
                             alert("Email actualizado.");
-                            this.renderEditor('user', data.id); // Refresh
+                            this.renderEditor('user', data.id);
                         }
                     }
                 });
             }
+
+        } else if (type === 'type') {
+            container.innerHTML = `
+                <div class="form-grid">
+                    <label>Nombre del Tipo <input type="text" id="inp-name" value="${data.name || ''}" placeholder="Ej: Tutorial"></label>
+                    <label>Slug (Icono) <input type="text" id="inp-slug" value="${data.slug || ''}" placeholder="Ej: tutorial"></label>
+                    <label>Color (Hex) <input type="color" id="inp-color" value="${data.color || '#ffffff'}" style="height:40px; width:100%"></label>
+                    <div style="grid-column: span 2"><label>Descripción <textarea id="inp-desc">${data.description || ''}</textarea></label></div>
+                </div>
+                <div style="margin-top:20px; text-align:right">
+                    <button class="btn-primary" id="btn-save-editor">💾 Guardar Tipo</button>
+                </div>
+            `;
+            document.getElementById('btn-save-editor').addEventListener('click', this.saveModal.bind(this));
         }
+
+        // Actions logic
+
     }
+
 
     bindTabLogic(container) {
         container.querySelectorAll('.tab-btn').forEach(btn => {
@@ -836,7 +891,7 @@ class AdminApp {
                 container.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
                 container.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
                 e.target.classList.add('active');
-                document.getElementById(`tab - ${e.target.dataset.tab} `).classList.add('active');
+                document.getElementById(`tab-${e.target.dataset.tab}`).classList.add('active');
             });
         });
     }
@@ -932,7 +987,7 @@ class AdminApp {
                 if (cmd === 'turnRight') { text = 'Girar Der'; icon = '↻'; }
                 if (cmd === 'unlock') { text = 'Abrir'; icon = '🔓'; }
 
-                div.innerHTML = `< span style = "flex:1" > ${icon} ${text}</span > `;
+                div.innerHTML = `<span style="flex:1">${icon} ${text}</span>`;
 
                 // Toggle Turn
                 if (cmd.includes('turn')) {
@@ -950,13 +1005,13 @@ class AdminApp {
 
                 // Header
                 div.innerHTML = `
-    < div style = "display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #633; padding-bottom:5px" >
+    <div style="display:flex; justify-content:space-between; margin-bottom:5px; border-bottom:1px solid #633; padding-bottom:5px">
                         <span>🔴 Bucle (${cmd.count}x)</span>
                         <div style="display:flex; gap:5px">
                             <button class="btn-xs btn-add-inner" style="background:#555">+</button>
                             <button class="btn-xs btn-del-loop" style="background:#844">X</button>
                         </div>
-                    </div >
+                    </div>
     <div class="loop-body" style="padding-left:10px; border-left:2px solid #633"></div>
 `;
 
@@ -1003,6 +1058,16 @@ class AdminApp {
 
     renderGridEditor() {
         const grid = document.getElementById('grid-editor');
+        if (!grid) return;
+
+        // Ensure we don't duplicate listeners (simple check or re-replace)
+        // Since we clear innerHTML, we lose cell listeners if they were individual.
+        // Delegation on the parent is best. 
+        // We will bind the click ONCE to the parent in bindToolLogic, OR here if we check for existing listener.
+        // But renderGridEditor is called multiple times.
+        // Best approach: Re-render content, and ensure parent has listener. 
+        // The parent #grid-editor is recreated in renderEditor, so we can bind there.
+
         grid.innerHTML = '';
         this.currentMap.forEach((row, y) => {
             row.forEach((cell, x) => {
@@ -1023,14 +1088,21 @@ class AdminApp {
                 el.className = className;
                 el.dataset.x = x;
                 el.dataset.y = y;
-                el.innerHTML = ''; // Clear content
+
+                // Cursor Feedback
+                const currentTool = this.currentTools.type;
+                if (currentTool === 'eraser') el.style.cursor = 'no-drop';
+                else el.style.cursor = 'cell';
 
                 // Icons
-                if (className.includes('start')) el.textContent = '🚩';
-                else if (className.includes('end')) el.textContent = '🏁';
-                else if (className.includes('key')) el.textContent = '🔑';
-                else if (className.includes('door')) el.textContent = '🚪';
-                else if (className.includes('portal')) el.textContent = '🌀';
+                let icon = '';
+                if (className.includes('start')) icon = '🚩';
+                else if (className.includes('end')) icon = '🏁';
+                else if (className.includes('key')) icon = '🔑';
+                else if (className.includes('door')) icon = '🚪';
+                else if (className.includes('portal')) icon = '🌀';
+
+                el.textContent = icon;
 
                 grid.appendChild(el);
             });
@@ -1044,35 +1116,46 @@ class AdminApp {
 
         if (tool === 'wall') {
             // Toggle Wall
-            this.currentMap[y][x] = this.currentMap[y][x] === 1 ? 0 : 1;
-            // Validations: Remove Start/End if wall placed on top?
-            if (this.currentMap[y][x] === 1) {
-                if (this.levelMeta.start.x === x && this.levelMeta.start.y === y) this.levelMeta.start = { x: -1, y: -1 }; // Invalid
-                if (this.levelMeta.end.x === x && this.levelMeta.end.y === y) this.levelMeta.end = { x: -1, y: -1 };
-            }
+            const isWall = this.currentMap[y][x] === 1;
+
+            // Clean cell first (remove items if any)
+            this.currentMap[y][x] = 0;
+            if (this.levelMeta.start.x === x && this.levelMeta.start.y === y) this.levelMeta.start = { x: -1, y: -1 };
+            if (this.levelMeta.end.x === x && this.levelMeta.end.y === y) this.levelMeta.end = { x: -1, y: -1 };
+
+            // Set New Value
+            if (!isWall) this.currentMap[y][x] = 1;
         }
         else if (tool === 'eraser') {
             this.currentMap[y][x] = 0;
-            // Clear Meta if erased
             if (this.levelMeta.start.x === x && this.levelMeta.start.y === y) this.levelMeta.start = { x: -1, y: -1 };
             if (this.levelMeta.end.x === x && this.levelMeta.end.y === y) this.levelMeta.end = { x: -1, y: -1 };
         }
-        else if (tool === 'start') {
-            this.currentMap[y][x] = 0; // Ensure no wall
-            this.levelMeta.start = { x, y };
-        }
-        else if (tool === 'end') {
-            this.currentMap[y][x] = 0; // Ensure no wall
-            this.levelMeta.end = { x, y };
-        }
-        else if (tool === 'key') {
-            this.currentMap[y][x] = this.currentMap[y][x] === 2 ? 0 : 2; // Toggle Key
-        }
-        else if (tool === 'door') {
-            this.currentMap[y][x] = this.currentMap[y][x] === 3 ? 0 : 3; // Toggle Door
-        }
-        else if (tool === 'portal') {
-            this.currentMap[y][x] = this.currentMap[y][x] === 4 ? 0 : 4; // Toggle Portal
+        else {
+            // Placing Items (Start, End, Key, Door, Portal)
+            // Rule: CANNOT place on Wall. Must erase wall first.
+            if (this.currentMap[y][x] === 1) {
+                alert("⛔ No puedes colocar objetos sobre una pared. Borra la pared primero.");
+                return;
+            }
+
+            if (tool === 'start') {
+                this.levelMeta.start = { x, y };
+                // Ensure no conflicting items in this cell (though strict validation might allow key+start? No, keep simple)
+                // Logic: Start/End overlay on Floor(0) is fine.
+            }
+            else if (tool === 'end') {
+                this.levelMeta.end = { x, y };
+            }
+            else if (tool === 'key') {
+                this.currentMap[y][x] = this.currentMap[y][x] === 2 ? 0 : 2;
+            }
+            else if (tool === 'door') {
+                this.currentMap[y][x] = this.currentMap[y][x] === 3 ? 0 : 3;
+            }
+            else if (tool === 'portal') {
+                this.currentMap[y][x] = this.currentMap[y][x] === 4 ? 0 : 4;
+            }
         }
 
         this.renderGridEditor();
@@ -1226,7 +1309,7 @@ class AdminApp {
                     const configStr = parts[1].split('-->')[0];
                     const config = JSON.parse(configStr);
                     const svgBase = window.CodeHero.UI.drawAvatar(config, newUsername);
-                    finalSvg = `${svgBase}< !--config:${configStr} --> `;
+                    finalSvg = `${svgBase}<!--config:${configStr}-->`;
                 } catch (e) { console.warn(e); }
             }
 
@@ -1238,20 +1321,32 @@ class AdminApp {
         } else if (type === 'level') {
             table = 'levels';
             try {
+                // Fix: Read from State, not DOM (which has tabs and hidden fields are gone)
+                // Also validate numeric inputs
+                const score = parseInt(document.getElementById('inp-score')?.value) || 10;
+
                 payload = {
                     title: document.getElementById('inp-title').value,
                     type: document.getElementById('inp-type').value,
                     description: document.getElementById('inp-desc').value,
                     phase_id: parseInt(document.getElementById('inp-phase').value),
-                    perfect_score: parseInt(document.getElementById('inp-perfect').value),
-                    map: JSON.parse(document.getElementById('inp-map').value),
-                    start_pos: JSON.parse(document.getElementById('inp-start').value),
-                    end_pos: JSON.parse(document.getElementById('inp-end').value),
+                    perfect_score: score,
+                    stars_2_threshold: parseInt(document.getElementById('inp-star2')?.value) || Math.ceil(score * 1.5),
+                    stars_1_threshold: parseInt(document.getElementById('inp-star1')?.value) || Math.ceil(score * 2.0),
+                    map: this.currentMap, // Use state directly
+                    start_pos: this.levelMeta.start, // Use state directly
+                    end_pos: this.levelMeta.end, // Use state directly
                     hint: document.getElementById('inp-hint').value,
                     start_code: this.startCode || []
                 };
+
+                // Validations
+                if (!payload.phase_id) throw new Error("Debes seleccionar una Fase.");
+                if (payload.start_pos.x === -1) throw new Error("Falta colocar la Bandera de Inicio (🚩).");
+                if (payload.end_pos.x === -1) throw new Error("Falta colocar la Meta (🏁).");
+
             } catch (e) {
-                alert("Error JSON en Nivel: " + e.message);
+                alert("Error preparando Nivel: " + e.message);
                 return;
             }
         } else if (type === 'world') {
@@ -1267,6 +1362,14 @@ class AdminApp {
                 description: document.getElementById('inp-desc').value,
                 order_index: parseInt(document.getElementById('inp-order').value) || 0,
                 world_id: this.currentContext?.worldId
+            };
+        } else if (type === 'type') {
+            table = 'level_types';
+            payload = {
+                name: document.getElementById('inp-name').value,
+                slug: document.getElementById('inp-slug').value,
+                color: document.getElementById('inp-color').value,
+                description: document.getElementById('inp-desc').value
             };
         }
 
@@ -1349,7 +1452,7 @@ class AdminApp {
         const settingsView = document.getElementById('view-settings');
         if (!settingsView) return;
         settingsView.innerHTML = `
-    < div class="card" style = "width:95%; max-width:800px; margin: 40px auto; padding:20px; box-sizing:border-box" >
+    <div class="card" style="width:95%; max-width:800px; margin: 40px auto; padding:20px; box-sizing:border-box">
                 <h2 style="margin-bottom:30px; color:var(--primary); text-align:center">⚙️ Configuración del Sistema</h2>
                 
                 <div class="form-group" style="display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; background:rgba(255,255,255,0.05); padding:20px; border-radius:12px; border:1px solid rgba(255,255,255,0.1)">
@@ -1379,6 +1482,10 @@ class AdminApp {
                     <button class="btn-primary" id="btn-save-settings" style="width:100%; padding:15px; font-size:1.1rem; box-shadow:0 4px 15px rgba(59, 130, 246, 0.3)">💾 Guardar Configuración</button>
                     
                     <button class="btn-primary" id="btn-restore-content" style="width:100%; padding:15px; margin-top:15px; font-size:1.1rem; background: #ea580c; border-color:#c2410c; box-shadow:0 4px 15px rgba(234, 88, 12, 0.3)">⚠️ Restaurar Contenido (Fábrica)</button>
+
+                    <div style="margin-top:20px; border-top:1px solid #444; padding-top:20px">
+                         <button class="btn-secondary" id="btn-export-sql" style="width:100%; padding:15px; font-size:1.1rem">📤 Exportar SQL de Niveles Actuales</button>
+                    </div>
                     
                     <p id="settings-msg" style="margin-top:15px; min-height:20px; font-weight:bold"></p>
                 </div>
@@ -1444,12 +1551,116 @@ class AdminApp {
                 msg.style.color = 'var(--danger)';
                 msg.textContent = "Error al restaurar: " + error.message;
             } else {
-                msg.style.color = 'var(--success)';
                 msg.textContent = "¡Contenido restaurado exitosamente!";
                 // Refresh stats
                 this.updateStats();
             }
         };
+
+        // Bind Export SQL
+        const btnExport = document.getElementById('btn-export-sql');
+        if (btnExport) {
+            btnExport.onclick = async () => {
+                console.log("AdminApp: Export SQL Clicked");
+                const msg = document.getElementById('settings-msg');
+                if (msg) {
+                    msg.innerHTML = "⏳ Generando SQL... <span style='font-weight:normal'>(Consultando DB)</span>";
+                    msg.style.color = '#fff';
+                }
+
+                try {
+                    // Fetch All Fresh Data
+                    const { data: w, error: ew } = await supabase.from('worlds').select('*').order('id');
+                    if (ew) throw ew;
+                    const { data: p, error: ep } = await supabase.from('phases').select('*').order('id');
+                    if (ep) throw ep;
+                    const { data: t, error: et } = await supabase.from('level_types').select('*').order('id');
+                    if (et) throw et;
+                    const { data: l, error: el } = await supabase.from('levels').select('*').order('id');
+                    if (el) throw el;
+
+                    let sql = `    -- ============ [START] SEED DATA (COPY FROM ADMIN) ============\n`;
+                    sql += `    -- NOTE: Select everything between [START] and [END] and replace with the code generated in Admin Panel > Settings\n\n`;
+
+                    // TYPES
+                    sql += `    -- 1. RESTORE LEVEL TYPES\n`;
+                    sql += `    INSERT INTO public.level_types (id, name, slug, color, description) VALUES\n`;
+                    sql += t.map(item => `    (${item.id}, '${item.name}', '${item.slug}', '${item.color}', '${(item.description || '').replace(/'/g, "''")}')`).join(',\n');
+                    sql += `;\n    -- Sync Types Seq\n    ALTER SEQUENCE public.level_types_id_seq RESTART WITH ${t.length + 1};\n\n`;
+
+                    // WORLDS
+                    sql += `    -- 2. RESTORE WORLDS\n`;
+                    sql += `    INSERT INTO public.worlds (id, title, description, style, level_range) VALUES\n`;
+                    sql += w.map(item => {
+                        const arr = item.level_range ? `'{${item.level_range[0]},${item.level_range[1]}}'` : 'NULL';
+                        return `    (${item.id}, '${item.title.replace(/'/g, "''")}', '${(item.description || '').replace(/'/g, "''")}', '${item.style}', ${arr})`;
+                    }).join(',\n');
+                    sql += `\n    ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title, description = EXCLUDED.description;\n`;
+                    sql += `    ALTER SEQUENCE public.worlds_id_seq RESTART WITH ${w.length + 1};\n\n`;
+
+                    // PHASES
+                    sql += `    -- 3. RESTORE PHASES\n`;
+                    sql += `    INSERT INTO public.phases (id, world_id, title, description, order_index) VALUES\n`;
+                    sql += p.map(item => `    (${item.id}, ${item.world_id}, '${item.title.replace(/'/g, "''")}', '${(item.description || '').replace(/'/g, "''")}', ${item.order_index})`).join(',\n');
+                    sql += `\n    ON CONFLICT (id) DO UPDATE SET title = EXCLUDED.title;\n`;
+                    sql += `    ALTER SEQUENCE public.phases_id_seq RESTART WITH ${p.length + 1};\n\n`;
+
+                    // LEVELS
+                    sql += `    -- 4. RESTORE LEVELS (Total: ${l.length})\n`;
+                    l.forEach(lvl => {
+                        const mapStr = JSON.stringify(lvl.map);
+                        const startStr = JSON.stringify(lvl.start_pos);
+                        const endStr = JSON.stringify(lvl.end_pos);
+                        const codeStr = lvl.start_code ? JSON.stringify(lvl.start_code) : 'NULL';
+                        const desc = (lvl.description || '').replace(/'/g, "''");
+                        const hint = (lvl.hint || '').replace(/'/g, "''");
+
+                        sql += `    INSERT INTO public.levels (id, phase_id, title, description, type, map, start_pos, end_pos, perfect_score, stars_2_threshold, stars_1_threshold, start_code, hint, difficulty) VALUES \n`;
+                        sql += `    (${lvl.id}, ${lvl.phase_id}, '${lvl.title.replace(/'/g, "''")}', '${desc}', '${lvl.type}', '${mapStr}'::jsonb, '${startStr}'::jsonb, '${endStr}'::jsonb, ${lvl.perfect_score}, ${lvl.stars_2_threshold}, ${lvl.stars_1_threshold}, ${codeStr === 'NULL' ? 'NULL' : `'${codeStr}'::jsonb`}, '${hint}', ${lvl.difficulty || 1}) \n`;
+                        sql += `    ON CONFLICT (id) DO UPDATE SET map = EXCLUDED.map, start_pos = EXCLUDED.start_pos, end_pos = EXCLUDED.end_pos, perfect_score = EXCLUDED.perfect_score;\n`;
+                    });
+                    sql += `    ALTER SEQUENCE public.levels_id_seq RESTART WITH ${l.length + 1};\n`;
+
+                    sql += `\n    -- ============ [ END ] SEED DATA (COPY FROM ADMIN) ============\n`;
+
+                    // SHOW MODAL
+                    const modal = document.getElementById('modal-sql');
+                    const textarea = document.getElementById('txt-sql-export');
+                    const btnCopy = document.getElementById('btn-copy-sql');
+
+                    if (modal && textarea) {
+                        textarea.value = sql;
+                        modal.style.display = 'flex'; // FORCE FLEX
+                        textarea.select();
+
+                        btnCopy.onclick = () => {
+                            textarea.select();
+                            document.execCommand('copy');
+                            if (navigator.clipboard) navigator.clipboard.writeText(sql);
+                            btnCopy.textContent = "✅ ¡Copiado!";
+                            setTimeout(() => btnCopy.innerHTML = "📋 Copiar al Portapapeles", 2000);
+                        };
+
+                        if (msg) {
+                            msg.textContent = "✅ Script generado. Copialo de la ventana modal.";
+                            msg.style.color = "var(--success)";
+                        }
+                    } else {
+                        console.log(sql);
+                        alert("Error: No se encontró el MODAL en el HTML. Revisa admin.html");
+                    }
+                } catch (e) {
+                    console.error("Export Failed", e);
+                    if (msg) {
+                        msg.textContent = "Error Generando SQL: " + e.message;
+                        msg.style.color = "var(--danger)";
+                    }
+                    alert("Error Generando SQL: " + e.message);
+                }
+            };
+        } else {
+            console.error("Button btn-export-sql not found in DOM");
+        }
     }
     // Helper for Styled Errors
     showError(msg) {
@@ -1473,7 +1684,7 @@ class AdminApp {
             if (actions) actions.parentNode.insertBefore(errorBox, actions);
         }
 
-        errorBox.innerHTML = `< span > ${msg}</span > `;
+        errorBox.innerHTML = `<span>${msg}</span>`;
         errorBox.style.display = 'block';
     }
 }

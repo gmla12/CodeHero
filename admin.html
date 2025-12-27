@@ -47,6 +47,7 @@
                 <button class="nav-btn" data-view="levels">🗺️ Niveles</button>
                 <button class="nav-btn" data-view="phases">🌍 Mundos y Fases</button>
                 <button class="nav-btn" data-view="users">👥 Usuarios</button>
+                <button class="nav-btn" data-view="types">🏷️ Tipos</button>
                 <button class="nav-btn" data-view="settings">⚙️ Configuración</button>
             </nav>
             <div class="user-profile">
@@ -133,6 +134,28 @@
 
                 </div>
 
+                <!-- Level Types View -->
+                <div id="view-types" class="view">
+                    <div class="table-container">
+                        <div class="toolbar">
+                            <input type="text" id="filter-types-search" placeholder="Buscar tipos...">
+                            <button class="btn-primary" id="btn-add-type">+ Nuevo Tipo</button>
+                        </div>
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Nombre</th>
+                                    <th>Color</th>
+                                    <th>Slug</th>
+                                    <th>Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="list-types"></tbody>
+                        </table>
+                    </div>
+                </div>
+
                 <!-- Settings View -->
                 <div id="view-settings" class="view">
                     <!-- Dynamic Content -->
@@ -179,6 +202,35 @@
             <input type="password" id="password" placeholder="Password">
             <button id="btn-login" class="btn-primary">Entrar</button>
             <p id="login-error" class="error"></p>
+        </div>
+    </div>
+
+    <!-- SQL Export Modal -->
+    <div id="modal-sql"
+        style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); z-index:2147483647; justify-content:center; align-items:center;">
+        <div class="card"
+            style="width:80%; max-width:800px; height:80vh; display:flex; flex-direction:column; background:#1e293b; color:white; padding:20px; border-radius:12px; box-shadow:0 10px 40px rgba(0,0,0,0.5)">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+                <h2 style="margin:0">📦 Script SQL Generado</h2>
+                <button class="btn-secondary" onclick="document.getElementById('modal-sql').style.display='none'">✕
+                    Cerrar</button>
+            </div>
+
+            <p style="color:#aaa; font-size:0.9rem; margin-bottom:10px">
+                1. Haz click en <b>Copiar</b>.<br>
+                2. Abre <code>supabase/schema.sql</code>.<br>
+                3. Reemplaza el bloque entre <code>[START]</code> y <code>[END]</code> con este contenido.
+            </p>
+
+            <textarea id="txt-sql-export"
+                style="flex:1; background:#1e293b; color:#10b981; padding:15px; border-radius:8px; border:1px solid #334155; font-family:monospace; font-size:0.9rem; resize:none"
+                readonly></textarea>
+
+            <div style="margin-top:15px; display:flex; justify-content:flex-end; gap:10px">
+                <button class="btn-secondary"
+                    onclick="document.getElementById('modal-sql').style.display='none'">Cerrar</button>
+                <button class="btn-primary" id="btn-copy-sql">📋 Copiar al Portapapeles</button>
+            </div>
         </div>
     </div>
 </body>
