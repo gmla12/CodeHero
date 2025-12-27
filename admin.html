@@ -25,8 +25,16 @@
     <link rel="stylesheet" href="/css/admin.css?v=dev_fix_27">
     <link rel="icon" type="image/png" href="/img/favicon.png">
 
-    <!-- Environment Config (Vite Bundle) -->
-    <script type="module" src="/env.js"></script>
+    <!-- Environment Config (Inlined for reliability) -->
+    <script>
+        window.ENV = window.ENV || {};
+        // Vite replaces these strings at build time
+        window.ENV.VITE_SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+        window.ENV.VITE_SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+        window.ENV.NEXT_PUBLIC_SUPABASE_URL = import.meta.env.NEXT_PUBLIC_SUPABASE_URL;
+        window.ENV.NEXT_PUBLIC_SUPABASE_ANON_KEY = import.meta.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+        console.log("Env Vars Injected (Admin)");
+    </script>
 
     <!-- Core Services (Static) -->
     <script type="module" src="/js/services/supabase.js"></script>
