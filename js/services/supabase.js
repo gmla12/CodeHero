@@ -6,12 +6,17 @@ const env = window.ENV || {};
 
 // Safe access that allows Vite to replace the string "import.meta.env.VITE_..."
 // while preventing crashes in raw environments where import.meta.env is undefined.
-const supabaseUrl = env.VITE_SUPABASE_URL || (import.meta.env && import.meta.env.VITE_SUPABASE_URL);
-const supabaseKey = env.VITE_SUPABASE_ANON_KEY || (import.meta.env && import.meta.env.VITE_SUPABASE_ANON_KEY);
+const viteEnv = import.meta.env || {};
+const supabaseUrl = env.VITE_SUPABASE_URL || viteEnv.VITE_SUPABASE_URL;
+const supabaseKey = env.VITE_SUPABASE_ANON_KEY || viteEnv.VITE_SUPABASE_ANON_KEY;
 
 if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('YOUR_SUPABASE_URL')) {
-    console.warn('Supabase credentials missing! Check .env file.');
-    alert("⚠️ Error: Configuración de Supabase faltante.\n\nPor favor edita el archivo .env y agrega tu URL y Key de Supabase.");
+    console.error('Supabase Config Missing. Debug Info:', {
+        windowEnv: env,
+        viteEnvKeys: Object.keys(viteEnv)
+    });
+    console.warn('Supabase credentials missing! Check .env file or Vercel Settings.');
+    alert("⚠️ Error: Configuración de Supabase faltante (Check Console).\n\nRevisa tus variables de entorno en Vercel.");
     throw new Error("Supabase Credentials Missing");
 }
 
